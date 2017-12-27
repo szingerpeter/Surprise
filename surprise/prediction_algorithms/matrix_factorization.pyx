@@ -185,21 +185,6 @@ class SVD(AlgoBase):
         cdef np.ndarray[np.double_t, ndim=2] qi
 
         cdef int u, i, f
-        cdef double r, err, dot, puf, qif, est
-        cdef double downweight = self.downweight
-        cdef double global_mean = self.trainset.global_mean
-
-        cdef double lr_bu = self.lr_bu
-        cdef double lr_bi = self.lr_bi
-        cdef double lr_pu = self.lr_pu
-        cdef double lr_qi = self.lr_qi
-
-        cdef double reg_bu = self.reg_bu
-        cdef double reg_bi = self.reg_bi
-        cdef double reg_pu = self.reg_pu
-        cdef double reg_qi = self.reg_qi
-        cdef double missing_val = self.missing_val
-        cdef double downweight_rating
 
         bu = np.zeros(trainset.n_users, np.double)
         bi = np.zeros(trainset.n_items, np.double)
@@ -207,8 +192,8 @@ class SVD(AlgoBase):
                               (trainset.n_users, self.n_factors))
         qi = np.random.normal(self.init_mean, self.init_std_dev,
                               (trainset.n_items, self.n_factors))
-    
 
+        
         if not self.biased:
             global_mean = 0
 
@@ -216,50 +201,22 @@ class SVD(AlgoBase):
             if self.verbose:
                 print("Processing epoch {}".format(current_epoch))
             if self.amau:
+                downweight_rating = 1
                 for u, i, r in trainset.all_ratings():
-                    dot = 0  # <q_i, p_u>
-                    for f in range(self.n_factors):
-                        dot += qi[i, f] * pu[u, f]
-                    err = (r - (global_mean + bu[u] + bi[i] + dot))
-                    #update biases
-                    if self.biased:
-                        bu[u] += lr_bu * (err - reg_bu * bu[u])
-                        bi[i] += lr_bi * (err - reg_bi * bi[i])
+                    pu[u], qi[i], bu[u], bi[i] = self.update(pu[u], qi[i], bu[u], bi[i], global_mean, r, downweight_rating)               
 
-                    #update factors
-                    for f in range(self.n_factors):
-                        puf = pu[u, f]
-                        qif = qi[i, f]
-                        pu[u, f] += lr_pu * (err * qif - reg_pu * puf)
-                        qi[i, f] += lr_qi * (err * puf - reg_qi * qif)
-          
             else:
                 for u in trainset.all_users():
                     for i in trainset.all_items():
                         downweight_rating = 1
-                        
-                        dot = 0  # <q_i, p_u>
-                        for f in range(self.n_factors):
-                            dot += qi[i, f] * pu[u, f]
-                        
+
                         rating = trainset.get_rating(u, i)
                         if rating != None:
                             r = rating
-                            err = (r - (global_mean + bu[u] + bi[i] + dot))
                         else:
-                            err = (missing_val - (global_mean + bu[u] + bi[i] + dot))
+                            r = self.missing_val
                             downweight_rating *= self.downweight
-                        #update biases
-                        if self.biased:
-                            bu[u] += lr_bu * downweight_rating * (err - reg_bu * bu[u])
-                            bi[i] += lr_bi * downweight_rating * (err - reg_bi * bi[i])
-
-                        #update factors
-                        for f in range(self.n_factors):
-                            puf = pu[u, f]
-                            qif = qi[i, f]
-                            pu[u, f] += lr_pu * downweight_rating * (err * qif - reg_pu * puf)
-                            qi[i, f] += lr_qi * downweight_rating * (err * puf - reg_qi * qif)		
+                        pu[u], qi[i], bu[u], bi[i] = self.update(pu[u], qi[i], bu[u], bi[i], global_mean, r, downweight_rating)               	
 
 
         self.bu = bu
@@ -292,6 +249,47 @@ class SVD(AlgoBase):
                 raise PredictionImpossible('User and item are unkown.')
 
         return est
+
+    def update(self, puu, qii, buu, bii, train_global_mean, rating, downweight_rating):
+        cdef int f
+        cdef double err, dot, puuf, qiif, est
+    
+        cdef double global_mean = train_global_mean
+        cdef np.ndarray[np.double_t, ndim=1] pu_u = puu
+        cdef np.ndarray[np.double_t, ndim=1] qi_i = qii
+        cdef double bu_u = buu
+        cdef double bi_i = bii
+    
+        cdef double r = rating
+        cdef double lr_bu = self.lr_bu
+        cdef double lr_bi = self.lr_bi
+        cdef double lr_pu = self.lr_pu
+        cdef double lr_qi = self.lr_qi
+    
+        cdef double reg_bu = self.reg_bu
+        cdef double reg_bi = self.reg_bi
+        cdef double reg_pu = self.reg_pu
+        cdef double reg_qi = self.reg_qi
+        cdef double downweight = downweight_rating
+        
+        dot = 0
+        for f in range(self.n_factors):
+            dot += qii[f] * puu[f]
+        err = (r - (global_mean + buu + bii + dot))
+        #update biases    
+        if self.biased:
+            bu_u += lr_bu * downweight * (err - reg_bu * bu_u)
+            bi_i += lr_bi * downweight * (err - reg_bi * bi_i)
+        
+        #update factors
+        for f in range(self.n_factors):
+            pu_u_f = pu_u[f]
+            qi_i_f = qi_i[f]
+            pu_u[f] = lr_pu * downweight * (err * qi_i_f - reg_pu * pu_u_f)
+            qi_i[f] = lr_qi * downweight * (err * pu_u_f - reg_qi * qi_i_f)
+
+        return pu_u, qi_i, bu_u, bi_i
+    
 
 
 class SVDpp(AlgoBase):
@@ -409,22 +407,9 @@ class SVDpp(AlgoBase):
         # item implicit factors
         cdef np.ndarray[np.double_t, ndim=2] yj
 
-        cdef int u, i, j, f
-        cdef double r, err, dot, puf, qif, sqrt_Iu, _
+        cdef int u, i, j
+        cdef double _ 
         cdef double global_mean = self.trainset.global_mean
-        cdef np.ndarray[np.double_t] u_impl_fdb
-
-        cdef double lr_bu = self.lr_bu
-        cdef double lr_bi = self.lr_bi
-        cdef double lr_pu = self.lr_pu
-        cdef double lr_qi = self.lr_qi
-        cdef double lr_yj = self.lr_yj
-
-        cdef double reg_bu = self.reg_bu
-        cdef double reg_bi = self.reg_bi
-        cdef double reg_pu = self.reg_pu
-        cdef double reg_qi = self.reg_qi
-        cdef double reg_yj = self.reg_yj
         cdef double missing_val = self.missing_val
         cdef double downweight_rating
 
@@ -437,87 +422,41 @@ class SVDpp(AlgoBase):
                               (trainset.n_items, self.n_factors))
         yj = np.random.normal(self.init_mean, self.init_std_dev,
                               (trainset.n_items, self.n_factors))
-        u_impl_fdb = np.zeros(self.n_factors, np.double)
 
         for current_epoch in range(self.n_epochs):
             if self.verbose:
                 print(" processing epoch {}".format(current_epoch))
             if self.amau:
+                downweight_rating = 1
                 for u, i, r in trainset.all_ratings():
 
                     # items rated by u. This is COSTLY
                     Iu = [j for (j, _) in trainset.ur[u]]
-                    sqrt_Iu = np.sqrt(len(Iu))
+                    pu[u], qi[i], yj, bu[u], bi[i] = self.update(pu[u], qi[i], Iu, yj, bu[u], bi[i], global_mean, r, downweight_rating)   
 
-                    # compute user implicit feedback
-                    u_impl_fdb = np.zeros(self.n_factors, np.double)
-                    for j in Iu:
-                        for f in range(self.n_factors):
-                            u_impl_fdb[f] += yj[j, f] / sqrt_Iu
-
-                    # compute current error
-                    dot = 0  # <q_i, (p_u + sum_{j in Iu} y_j / sqrt{Iu}>
-                    for f in range(self.n_factors):
-                        dot += qi[i, f] * (pu[u, f] + u_impl_fdb[f])
-
-                    err = r - (global_mean + bu[u] + bi[i] + dot)
-    
-                    # update biases
-                    bu[u] += lr_bu * (err - reg_bu * bu[u])
-                    bi[i] += lr_bi * (err - reg_bi * bi[i])
-    
-                    # update factors
-                    for f in range(self.n_factors):
-                        puf = pu[u, f]
-                        qif = qi[i, f]
-                        pu[u, f] += lr_pu * (err * qif - reg_pu * puf)
-                        qi[i, f] += lr_qi * (err * (puf + u_impl_fdb[f]) -
-                                         reg_qi * qif)
-                        for j in Iu:
-                            yj[j, f] += lr_yj * (err * qif / sqrt_Iu -
-                                             reg_yj * yj[j, f])
             else:
                 for u in trainset.all_users():
                     for i in trainset.all_items():
                         downweight_rating = 1
                         # items rated by u. This is COSTLY
                         Iu = [j for (j, _) in trainset.ur[u]]
-                        sqrt_Iu = np.sqrt(len(Iu))
 
-                        # compute user implicit feedback
-                        u_impl_fdb = np.zeros(self.n_factors, np.double)
-                        for j in Iu:
-                            for f in range(self.n_factors):
-                                u_impl_fdb[f] += yj[j, f] / sqrt_Iu
-
-                        # compute current error
-                        dot = 0  # <q_i, (p_u + sum_{j in Iu} y_j / sqrt{Iu}>
-                        for f in range(self.n_factors):
-                            dot += qi[i, f] * (pu[u, f] + u_impl_fdb[f])
-                        
                         rating = trainset.get_rating(u, i)
                         if rating != None:
                             r = rating
-                            err = (r - (global_mean + bu[u] + bi[i] + dot))
                         else:
-                            err = (missing_val - (global_mean + bu[u] + bi[i] + dot))
+                            r = self.missing_val
                             downweight_rating *= self.downweight
-                        #update biases
-                        bu[u] += lr_bu * downweight_rating * (err - reg_bu * bu[u])
-                        bi[i] += lr_bi * downweight_rating * (err - reg_bi * bi[i])
-
-                        #update factors
-                        for f in range(self.n_factors):
-                            puf = pu[u, f]
-                            qif = qi[i, f]
-                            pu[u, f] += lr_pu * downweight_rating * (err * qif - reg_pu * puf)
-                            qi[i, f] += lr_qi * downweight_rating * (err * puf - reg_qi * qif)		
-
+                        pu[u], qi[i], yj_updated, bu[u], bi[i] = self.update(pu[u], qi[i], Iu, yj, bu[u], bi[i], global_mean, r, downweight_rating)
+                        for j in Iu:
+                            yj[j] = yj_updated[j]
+             
         self.bu = bu
         self.bi = bi
         self.pu = pu
         self.qi = qi
         self.yj = yj
+
 
     def estimate(self, u, i):
 
@@ -536,6 +475,66 @@ class SVDpp(AlgoBase):
             est += np.dot(self.qi[i], self.pu[u] + u_impl_feedback)
 
         return est
+
+    def update(self, puu, qii, iu, yj, buu, bii, train_global_mean, rating, downweight_rating):
+        cdef int f
+        cdef double err, dot, puuf, qiif, est
+    
+        cdef double global_mean = train_global_mean
+        cdef np.ndarray[np.double_t] u_impl_fdb
+        cdef np.ndarray[np.double_t, ndim=1] pu_u = puu
+        cdef np.ndarray[np.double_t, ndim=1] qi_i = qii
+        cdef list Iu = iu
+        cdef np.ndarray[np.double_t, ndim=2] Yj = yj
+        cdef double bu_u = buu
+        cdef double bi_i = bii
+
+    
+        cdef double r = rating
+        cdef double lr_bu = self.lr_bu
+        cdef double lr_bi = self.lr_bi
+        cdef double lr_pu = self.lr_pu
+        cdef double lr_qi = self.lr_qi
+        cdef double lr_yj = self.lr_yj
+    
+        cdef double reg_bu = self.reg_bu
+        cdef double reg_bi = self.reg_bi
+        cdef double reg_pu = self.reg_pu
+        cdef double reg_qi = self.reg_qi
+        cdef double reg_yj = self.reg_yj
+        cdef double downweight = downweight_rating
+        
+        sqrt_Iu = np.sqrt(len(Iu))
+
+        # compute user implicit feedback
+        u_impl_fdb = np.zeros(self.n_factors, np.double)
+        for j in Iu:
+            for f in range(self.n_factors):
+                u_impl_fdb[f] += Yj[j, f] / sqrt_Iu
+
+        # compute current error
+        dot = 0  # <q_i, (p_u + sum_{j in Iu} y_j / sqrt{Iu}>
+        for f in range(self.n_factors):
+            dot += qi_i[f] * (pu_u[f] + u_impl_fdb[f])
+
+        err = (r - (global_mean + buu + bii + dot))
+        #update biases    
+        bu_u += lr_bu * downweight * (err - reg_bu * bu_u)
+        bi_i += lr_bi * downweight * (err - reg_bi * bi_i)
+        
+        #update factors
+        for f in range(self.n_factors):
+            pu_u_f = pu_u[f]
+            qi_i_f = qi_i[f]
+            pu_u[f] = lr_pu * downweight * (err * qi_i_f - reg_pu * pu_u_f)
+            qi_i[f] = lr_qi * downweight * (err * pu_u_f - reg_qi * qi_i_f)
+            
+            for j in Iu:
+                Yj[j, f] += lr_yj * (err * qi_i_f / sqrt_Iu -
+                                             reg_yj * Yj[j, f])
+
+        return pu_u, qi_i, Yj, bu_u, bi_i
+
 
 
 class NMF(AlgoBase):
