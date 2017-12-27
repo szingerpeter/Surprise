@@ -195,6 +195,10 @@ def test_load_form_df():
     assert trainset.knows_user(trainset.to_inner_uid(9))
     assert trainset.knows_user(trainset.to_inner_uid('10000'))
     assert trainset.knows_item(trainset.to_inner_iid(2))
+    assert trainset.get_rating(trainset.to_inner_uid(9), trainset.to_inner_iid(1)) == 3
+    assert trainset.get_rating(trainset.to_inner_uid(9), trainset.to_inner_iid(2)) == None
+    assert trainset.get_rating(9, 0) == None
+
 
     # assert r(9, 1) = 3 and r(2, 1) = 4
     uid9 = trainset.to_inner_uid(9)

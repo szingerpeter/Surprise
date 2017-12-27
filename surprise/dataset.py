@@ -553,6 +553,27 @@ class Trainset:
 
         return iid in self.ir
 
+    def get_rating(self, uid, iid):
+        """Get rating of user - item tuple if it is in the trainset.
+
+        A tuple is part of the trainset if the user has rated the particular item. If it is not part of the trainset, ``None`` is returned.
+
+        Args:
+            uid(int): The (inner) user id. See :ref:`this
+                note<raw_inner_note>`.
+            iid(int): The (inner) item id. See :ref:`this
+                note<raw_inner_note>`.
+        Returns:
+            Rating if user rated item as part of the trainset, else ``None``.
+        """
+        if self.knows_user(uid):
+            ratings = [uratings[1] for uratings in self.ur[uid] if uratings[0] == iid]
+            rating = ratings[0] if len(ratings) == 1 else None
+        else:
+            rating = None
+        return rating
+            
+
     def to_inner_uid(self, ruid):
         """Convert a **user** raw id to an inner id.
 

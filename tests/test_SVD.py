@@ -92,6 +92,11 @@ def test_SVD_parameters():
     rmse_reg_qi = evaluate(algo, data, measures=['rmse'])['rmse']
     assert rmse_default != rmse_reg_qi
 
+    # AMAN
+    algo = SVD(n_factors=1, n_epochs=1, amau=False, missing_val=0, downweight=.001)
+    rmse_aman = evaluate(algo, data, measures=['rmse'])['rmse']
+    assert rmse_default != rmse_aman
+
 
 def test_SVDpp_parameters():
     """Ensure that all parameters are taken into account."""
@@ -104,6 +109,11 @@ def test_SVDpp_parameters():
     algo = SVDpp(n_factors=2, n_epochs=1)
     rmse_factors = evaluate(algo, data, measures=['rmse'])['rmse']
     assert rmse_default != rmse_factors
+
+    # AMAN
+    algo = SVDpp(n_factors=1, n_epochs=1, amau=False, missing_val=0, downweight=.001)
+    rmse_aman = evaluate(algo, data, measures=['rmse'])['rmse']
+    assert rmse_default != rmse_aman
 
     # The rest is OK but just takes too long for now...
     """

@@ -76,6 +76,12 @@ def test_NMF_parameters():
     rmse_init_low = evaluate(algo, data, measures=['rmse'])['rmse']
     assert rmse_default != rmse_init_low
 
+
+    # AMAN
+    algo = NMF(n_factors=1, n_epochs=1, amau=False, missing_val=0, downweight=.001)
+    rmse_aman = evaluate(algo, data, measures=['rmse'])['rmse']
+    assert rmse_default != rmse_aman
+
     # init_low
     with pytest.raises(ValueError):
         algo = NMF(n_factors=1, n_epochs=1, init_low=-1)
