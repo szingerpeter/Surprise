@@ -186,11 +186,13 @@ class SVD(AlgoBase):
         # item factors
         cdef np.ndarray[np.double_t, ndim=2] qi
 
-        cdef int u, i
-		cdef double global_mean = self.trainset.global_mean
-		cdef double missing_val = self.missing_val
-        cdef double downweight_rating
+        #cdef int u, i
+		#cdef double global_mean = self.trainset.global_mean
+		#cdef double missing_val = self.missing_val
+        #cdef double downweight_rating
 
+		global_mean = self.trainset.global_mean
+		
         bu = np.zeros(trainset.n_users, np.double)
         bi = np.zeros(trainset.n_items, np.double)
         pu = np.random.normal(self.init_mean, self.init_std_dev,
@@ -219,7 +221,7 @@ class SVD(AlgoBase):
                         if rating != None:
                             r = rating
                         else:
-                            r = missing_val
+                            r = self.missing_val
                             downweight_rating *= self.downweight
                         pu[u], qi[i], bu[u], bi[i] = self.update(pu[u], qi[i], bu[u], bi[i], global_mean, r, downweight_rating)               	
 
@@ -418,10 +420,12 @@ class SVDpp(AlgoBase):
 
         cdef int u, i, j
         cdef double _ 
-        cdef double global_mean = self.trainset.global_mean
-        cdef double missing_val = self.missing_val
-        cdef double downweight_rating
+        #cdef double global_mean = self.trainset.global_mean
+        #cdef double missing_val = self.missing_val
+        #cdef double downweight_rating
 
+		global_mean = self.trainset.global_mean
+		
         bu = np.zeros(trainset.n_users, np.double)
         bi = np.zeros(trainset.n_items, np.double)
 
@@ -457,7 +461,7 @@ class SVDpp(AlgoBase):
                         if rating != None:
                             r = rating
                         else:
-                            r = missing_val
+                            r = self.missing_val
                             downweight_rating *= self.downweight
                         pu[u], qi[i], yj_updated, bu[u], bi[i] = self.update(pu[u], qi[i], Iu, yj, bu[u], bi[i], global_mean, r, downweight_rating)
                         for j in Iu:
@@ -674,9 +678,9 @@ class NMF(AlgoBase):
         cdef np.ndarray[np.double_t, ndim=2] item_num
         cdef np.ndarray[np.double_t, ndim=2] item_denom
 
-        cdef int u, i
+        #cdef int u, i
 		#cdef int f
-        cdef double r
+        #cdef double r
 		#cdef est, l, dot, err
         #cdef double reg_pu = self.reg_pu
         #cdef double reg_qi = self.reg_qi
@@ -684,10 +688,12 @@ class NMF(AlgoBase):
         #cdef double reg_bi = self.reg_bi
         #cdef double lr_bu = self.lr_bu
         #cdef double lr_bi = self.lr_bi
-        cdef double global_mean = self.trainset.global_mean
-        cdef double missing_val = self.missing_val
-        cdef double downweight_rating
+        #cdef double global_mean = self.trainset.global_mean
+        #cdef double missing_val = self.missing_val
+        #cdef double downweight_rating
 
+		global_mean = self.trainset.global_mean
+		
         # Randomly initialize user and item factors
         pu = np.random.uniform(self.init_low, self.init_high,
                                size=(trainset.n_users, self.n_factors))
@@ -753,7 +759,7 @@ class NMF(AlgoBase):
                             r = rating                            
                         #    err = (r - (global_mean + bu[u] + bi[i] + dot))
                         else:
-                            r = missing_val
+                            r = self.missing_val
                             downweight_rating *= self.downweight
 						user_num[u], user_denom[u], item_num[i], item_denom[i], bu[u], bi[i] = self.update(pu[u], qi[i], user_num[u], user_denom[u], item_num[i], item_denom[i], bu[u], bi[i], global_mean, r, downweight_rating)
                         # update biases
