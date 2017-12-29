@@ -96,6 +96,11 @@ def test_SVD_parameters():
     algo = SVD(n_factors=1, n_epochs=1, amau=False, missing_val=0, downweight=.001)
     rmse_aman = evaluate(algo, data, measures=['rmse'])['rmse']
     assert rmse_default != rmse_aman
+	
+	# Mean - centered
+	algo = SVD(n_factors=1, n_epochs=1, mean_centered=False)
+	rmse_mean_centered = evaluate(algo, data, measures=['rmse'])['rmse']
+	assert rmse_default != rmse_mean_centered
 
 
 def test_SVDpp_parameters():
@@ -114,6 +119,11 @@ def test_SVDpp_parameters():
     algo = SVDpp(n_factors=1, n_epochs=1, amau=False, missing_val=0, downweight=.001)
     rmse_aman = evaluate(algo, data, measures=['rmse'])['rmse']
     assert rmse_default != rmse_aman
+	
+	# Mean - centered
+	algo = SVDpp(n_factors=1, n_epochs=1, mean_centered=False)
+	rmse_mean_centered = evaluate(algo, data, measures=['rmse'])['rmse']
+	assert rmse_default != rmse_mean_centered
 
     # The rest is OK but just takes too long for now...
     """
