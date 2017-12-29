@@ -79,8 +79,9 @@ class SVD(AlgoBase):
         n_factors: The number of factors. Default is ``100``.
         n_epochs: The number of iteration of the SGD procedure. Default is
             ``20``.
-        biased(bool): Whether to use baselines (or biases). See :ref:`note
+        biased(bool): Whether to use biases. See :ref:`note
             <unbiased_note>` above.  Default is ``True``.
+		mean_centered(bool): Whether to mean center ratings. Default is ``True``.
         init_mean: The mean of the normal distribution for factor vectors
             initialization. Default is ``0``.
         init_std_dev: The standard deviation of the normal distribution for
@@ -110,7 +111,7 @@ class SVD(AlgoBase):
         downweight: How much downweight the negatively treated missing values
     """
 
-    def __init__(self, n_factors=100, n_epochs=20, biased=True, init_mean=0,
+    def __init__(self, n_factors=100, n_epochs=20, biased=True, mean_centered=True, init_mean=0,
                  init_std_dev=.1, lr_all=.005,
                  reg_all=.02, lr_bu=None, lr_bi=None, lr_pu=None, lr_qi=None,
                  reg_bu=None, reg_bi=None, reg_pu=None, reg_qi=None,
@@ -119,6 +120,7 @@ class SVD(AlgoBase):
         self.n_factors = n_factors
         self.n_epochs = n_epochs
         self.biased = biased
+		self.mean_centered = mean_centered
         self.init_mean = init_mean
         self.init_std_dev = init_std_dev
         self.lr_bu = lr_bu if lr_bu is not None else lr_all
@@ -184,7 +186,10 @@ class SVD(AlgoBase):
         # item factors
         cdef np.ndarray[np.double_t, ndim=2] qi
 
-        cdef int u, i, f
+        cdef int u, i
+		cdef double global_mean = self.trainset.global_mean
+		cdef double missing_val = self.missing_val
+        cdef double downweight_rating
 
         bu = np.zeros(trainset.n_users, np.double)
         bi = np.zeros(trainset.n_items, np.double)
@@ -194,8 +199,8 @@ class SVD(AlgoBase):
                               (trainset.n_items, self.n_factors))
 
         
-        if not self.biased:
-            global_mean = 0
+        if not self.mean_centered:
+			global_mean = 0
 
         for current_epoch in range(self.n_epochs):
             if self.verbose:
@@ -214,7 +219,7 @@ class SVD(AlgoBase):
                         if rating != None:
                             r = rating
                         else:
-                            r = self.missing_val
+                            r = missing_val
                             downweight_rating *= self.downweight
                         pu[u], qi[i], bu[u], bi[i] = self.update(pu[u], qi[i], bu[u], bi[i], global_mean, r, downweight_rating)               	
 
@@ -229,10 +234,12 @@ class SVD(AlgoBase):
 
         known_user = self.trainset.knows_user(u)
         known_item = self.trainset.knows_item(i)
-
-        if self.biased:
-            est = self.trainset.global_mean
-
+		
+		est = 0
+        if self.mean_centered:
+            est += self.trainset.global_mean
+		
+		if self.biased:
             if known_user:
                 est += self.bu[u]
 
@@ -330,6 +337,7 @@ class SVDpp(AlgoBase):
         n_factors: The number of factors. Default is ``20``.
         n_epochs: The number of iteration of the SGD procedure. Default is
             ``20``.
+		mean_centered(bool): Whether to mean center ratings. Default is ``True``.
         init_mean: The mean of the normal distribution for factor vectors
             initialization. Default is ``0``.
         init_std_dev: The standard deviation of the normal distribution for
@@ -363,13 +371,14 @@ class SVDpp(AlgoBase):
         downweight: How much downweight the negatively treated missing values
     """
 
-    def __init__(self, n_factors=20, n_epochs=20, init_mean=0, init_std_dev=.1,
+    def __init__(self, n_factors=20, n_epochs=20, mean_centered=True, init_mean=0, init_std_dev=.1,
                  lr_all=.007, reg_all=.02, lr_bu=None, lr_bi=None, lr_pu=None,
                  lr_qi=None, lr_yj=None, reg_bu=None, reg_bi=None, reg_pu=None,
                  reg_qi=None, reg_yj=None, verbose=False, amau=True, missing_val=0, downweight=.001):
 
         self.n_factors = n_factors
         self.n_epochs = n_epochs
+		self.mean_centered = mean_centered
         self.init_mean = init_mean
         self.init_std_dev = init_std_dev
         self.lr_bu = lr_bu if lr_bu is not None else lr_all
@@ -422,6 +431,9 @@ class SVDpp(AlgoBase):
                               (trainset.n_items, self.n_factors))
         yj = np.random.normal(self.init_mean, self.init_std_dev,
                               (trainset.n_items, self.n_factors))
+							  
+		if not self.mean_centered:
+			global_mean = 0
 
         for current_epoch in range(self.n_epochs):
             if self.verbose:
@@ -445,7 +457,7 @@ class SVDpp(AlgoBase):
                         if rating != None:
                             r = rating
                         else:
-                            r = self.missing_val
+                            r = missing_val
                             downweight_rating *= self.downweight
                         pu[u], qi[i], yj_updated, bu[u], bi[i] = self.update(pu[u], qi[i], Iu, yj, bu[u], bi[i], global_mean, r, downweight_rating)
                         for j in Iu:
@@ -460,7 +472,10 @@ class SVDpp(AlgoBase):
 
     def estimate(self, u, i):
 
-        est = self.trainset.global_mean
+        est = 0
+		
+		if self.mean_centered:
+			est += self.trainset.global_mean
 
         if self.trainset.knows_user(u):
             est += self.bu[u]
@@ -589,8 +604,9 @@ class NMF(AlgoBase):
         n_factors: The number of factors. Default is ``15``.
         n_epochs: The number of iteration of the SGD procedure. Default is
             ``50``.
-        biased(bool): Whether to use baselines (or biases). Default is
+        biased(bool): Whether to use biases. Default is
             ``False``.
+		mean_centered(bool): Whether to mean center ratings. Default is ``True``.
         reg_pu: The regularization term for users :math:`\lambda_u`. Default is
             ``0.06``.
         reg_qi: The regularization term for items :math:`\lambda_i`. Default is
@@ -611,13 +627,14 @@ class NMF(AlgoBase):
         verbose: If ``True``, prints the current epoch. Default is ``False``.
     """
 
-    def __init__(self, n_factors=15, n_epochs=50, biased=False, reg_pu=.06,
+    def __init__(self, n_factors=15, n_epochs=50, biased=False, mean_centered=True, reg_pu=.06,
                  reg_qi=.06, reg_bu=.02, reg_bi=.02, lr_bu=.005, lr_bi=.005,
                  init_low=0, init_high=1, verbose=False, amau=True, missing_val=0, downweight=.001):
 
         self.n_factors = n_factors
         self.n_epochs = n_epochs
         self.biased = biased
+		self.mean_centered = mean_centered
         self.reg_pu = reg_pu
         self.reg_qi = reg_qi
         self.lr_bu = lr_bu
@@ -667,7 +684,7 @@ class NMF(AlgoBase):
         #cdef double reg_bi = self.reg_bi
         #cdef double lr_bu = self.lr_bu
         #cdef double lr_bi = self.lr_bi
-        #cdef double global_mean = self.trainset.global_mean
+        cdef double global_mean = self.trainset.global_mean
         cdef double missing_val = self.missing_val
         cdef double downweight_rating
 
@@ -680,7 +697,7 @@ class NMF(AlgoBase):
         bu = np.zeros(trainset.n_users, np.double)
         bi = np.zeros(trainset.n_items, np.double)
 
-        if not self.biased:
+        if not self.mean_centered:
             global_mean = 0
 
         for current_epoch in range(self.n_epochs):
@@ -736,7 +753,7 @@ class NMF(AlgoBase):
                             r = rating                            
                         #    err = (r - (global_mean + bu[u] + bi[i] + dot))
                         else:
-                            r = self.missing_val
+                            r = missing_val
                             downweight_rating *= self.downweight
 						user_num[u], user_denom[u], item_num[i], item_denom[i], bu[u], bi[i] = self.update(pu[u], qi[i], user_num[u], user_denom[u], item_num[i], item_denom[i], bu[u], bi[i], global_mean, r, downweight_rating)
                         # update biases
@@ -776,9 +793,11 @@ class NMF(AlgoBase):
         known_user = self.trainset.knows_user(u)
         known_item = self.trainset.knows_item(i)
 
-        if self.biased:
-            est = self.trainset.global_mean
-
+		est = 0
+        if self.mean_centered:
+            est += self.trainset.global_mean
+			
+		if self.biased:
             if known_user:
                 est += self.bu[u]
 
