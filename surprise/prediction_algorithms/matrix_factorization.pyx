@@ -657,15 +657,17 @@ class NMF(AlgoBase):
         cdef np.ndarray[np.double_t, ndim=2] item_num
         cdef np.ndarray[np.double_t, ndim=2] item_denom
 
-        cdef int u, i, f
-        cdef double r, est, l, dot, err
-        cdef double reg_pu = self.reg_pu
-        cdef double reg_qi = self.reg_qi
-        cdef double reg_bu = self.reg_bu
-        cdef double reg_bi = self.reg_bi
-        cdef double lr_bu = self.lr_bu
-        cdef double lr_bi = self.lr_bi
-        cdef double global_mean = self.trainset.global_mean
+        cdef int u, i
+		#cdef int f
+        cdef double r
+		#cdef est, l, dot, err
+        #cdef double reg_pu = self.reg_pu
+        #cdef double reg_qi = self.reg_qi
+        #cdef double reg_bu = self.reg_bu
+        #cdef double reg_bi = self.reg_bi
+        #cdef double lr_bu = self.lr_bu
+        #cdef double lr_bi = self.lr_bi
+        #cdef double global_mean = self.trainset.global_mean
         cdef double missing_val = self.missing_val
         cdef double downweight_rating
 
@@ -693,59 +695,61 @@ class NMF(AlgoBase):
             item_denom = np.zeros((trainset.n_items, self.n_factors))
 
             if self.amau:
+				downweight_rating = 1
                 # Compute numerators and denominators for users and items factors
                 for u, i, r in trainset.all_ratings():
 
                     # compute current estimation and error
-                    dot = 0  # <q_i, p_u>
-                    for f in range(self.n_factors):
-                        dot += qi[i, f] * pu[u, f]
-                    est = global_mean + bu[u] + bi[i] + dot
-                    err = r - est
+                    #dot = 0  # <q_i, p_u>
+                    #for f in range(self.n_factors):
+                    #    dot += qi[i, f] * pu[u, f]
+                    #est = global_mean + bu[u] + bi[i] + dot
+                    #err = r - est
 
                     # update biases
-                    if self.biased:
-                        bu[u] += lr_bu * (err - reg_bu * bu[u])
-                        bi[i] += lr_bi * (err - reg_bi * bi[i])
+                    #if self.biased:
+                    #    bu[u] += lr_bu * (err - reg_bu * bu[u])
+                    #    bi[i] += lr_bi * (err - reg_bi * bi[i])
 
                     # compute numerators and denominators
-                    for f in range(self.n_factors):
-                        user_num[u, f] += qi[i, f] * r
-                        user_denom[u, f] += qi[i, f] * est
-                        item_num[i, f] += pu[u, f] * r
-                        item_denom[i, f] += pu[u, f] * est
-
+                    #for f in range(self.n_factors):
+                    #    user_num[u, f] += qi[i, f] * r
+                    #    user_denom[u, f] += qi[i, f] * est
+                    #    item_num[i, f] += pu[u, f] * r
+                    #    item_denom[i, f] += pu[u, f] * est
+				 
+				user_num[u], user_denom[u], item_num[i], item_denom[i], bu[u], bi[i] = self.update(pu[u], qi[i], user_num[u], user_denom[u], item_num[i], item_denom[i], bu[u], bi[i], global_mean, r, downweight)
             else:
                 for u in trainset.all_users():
                     for i in trainset.all_items():
-                        downweight_rating = 1
-                        
+                        downweight_rating = 1                        
+	
                         # compute current estimation and error
-                        dot = 0  # <q_i, p_u>
-                        for f in range(self.n_factors):
-                            dot += qi[i, f] * pu[u, f]
-                        est = global_mean + bu[u] + bi[i] + dot
-                        err = r - est
+                        #dot = 0  # <q_i, p_u>
+                        #for f in range(self.n_factors):
+                        #    dot += qi[i, f] * pu[u, f]
+                        #est = global_mean + bu[u] + bi[i] + dot
+                        #err = r - est
 
                         rating = trainset.get_rating(u, i)
                         if rating != None:
                             r = rating                            
-                            err = (r - (global_mean + bu[u] + bi[i] + dot))
+                        #    err = (r - (global_mean + bu[u] + bi[i] + dot))
                         else:
-                            err = (missing_val - (global_mean + bu[u] + bi[i] + dot))
+                            r = self.missing_val
                             downweight_rating *= self.downweight
-
+						user_num[u], user_denom[u], item_num[i], item_denom[i], bu[u], bi[i] = self.update(pu[u], qi[i], user_num[u], user_denom[u], item_num[i], item_denom[i], bu[u], bi[i], global_mean, r, downweight_rating)
                         # update biases
-                        if self.biased:
-                            bu[u] += lr_bu * (err - reg_bu * bu[u])
-                            bi[i] += lr_bi * (err - reg_bi * bi[i])
+                        #if self.biased:
+                        #    bu[u] += lr_bu * (err - reg_bu * bu[u])
+                        #    bi[i] += lr_bi * (err - reg_bi * bi[i])
 
                         # compute numerators and denominators
-                        for f in range(self.n_factors):
-                            user_num[u, f] += qi[i, f] * r
-                            user_denom[u, f] += qi[i, f] * est
-                            item_num[i, f] += pu[u, f] * r
-                            item_denom[i, f] += pu[u, f] * est
+                        #for f in range(self.n_factors):
+                        #    user_num[u, f] += qi[i, f] * r
+                        #    user_denom[u, f] += qi[i, f] * est
+                        #    item_num[i, f] += pu[u, f] * r
+                        #    item_denom[i, f] += pu[u, f] * est
             
             # Update user factors
             for u in trainset.all_users():
@@ -791,3 +795,54 @@ class NMF(AlgoBase):
                 raise PredictionImpossible('User and item are unkown.')
 
         return est
+
+	def update(self, puu, qii, u_num_u, u_denom_u, i_num_i, i_denom_i, buu, bii, train_global_mean, rating, downweight_rating):
+        cdef int f
+        cdef double err, dot, puuf, qiif, est
+    
+        cdef double global_mean = train_global_mean
+        cdef np.ndarray[np.double_t] u_impl_fdb
+        cdef np.ndarray[np.double_t, ndim=1] pu_u = puu
+        cdef np.ndarray[np.double_t, ndim=1] qi_i = qii
+        cdef list Iu = iu
+        cdef np.ndarray[np.double_t, ndim=2] Yj = yj
+		cdef np.ndarray[np.double_t, ndim=1] user_num_u, user_denom_u, item_num_i, item_denom_i = u_num_u, u_denom_u, i_num_i, i_denom_i
+        cdef double bu_u = buu
+        cdef double bi_i = bii
+
+    
+        cdef double r = rating
+        cdef double lr_bu = self.lr_bu
+        cdef double lr_bi = self.lr_bi
+        cdef double lr_pu = self.lr_pu
+        cdef double lr_qi = self.lr_qi
+        cdef double lr_yj = self.lr_yj
+    
+        cdef double reg_bu = self.reg_bu
+        cdef double reg_bi = self.reg_bi
+        cdef double reg_pu = self.reg_pu
+        cdef double reg_qi = self.reg_qi
+        cdef double reg_yj = self.reg_yj
+        cdef double downweight = downweight_rating
+
+	
+		# compute current estimation and error
+        dot = 0  # <q_i, p_u>
+        for f in range(self.n_factors):
+			dot += qi_i[f] * pu_u[f]
+        est = global_mean + bu_u + bi_i + dot
+		err = r - est
+		
+		# update biases
+		if self.biased:
+			bu_u += lr_bu * downweight * (err - reg_bu * bu_u)
+			bi_i += lr_bi * downweight * (err - reg_bi * bi_i)
+		
+		# compute numerators and denominators
+		for f in range(self.n_factors):
+			user_num_u[f] += qi_i[f] * r
+			user_denom_u[f] += qi_i[f] * est
+			item_num_i[f] += pu_u[f] * r_ui
+			item_denom_i[f] += pu_u[f] * est
+		
+		return user_num_u, user_denom_u, item_num_i, item_denom_i, bu_u, bi_i
