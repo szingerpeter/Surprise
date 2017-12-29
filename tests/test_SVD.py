@@ -124,7 +124,12 @@ def test_SVDpp_parameters():
 	algo = SVDpp(n_factors=1, n_epochs=1, mean_centered=False)
 	rmse_mean_centered = evaluate(algo, data, measures=['rmse'])['rmse']
 	assert rmse_default != rmse_mean_centered
-
+	
+	# biased
+    algo = SVD(n_factors=1, n_epochs=1, biased=False)
+    rmse_biased = evaluate(algo, data, measures=['rmse'])['rmse']
+    assert rmse_default != rmse_biased
+	
     # The rest is OK but just takes too long for now...
     """
 

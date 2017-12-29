@@ -339,6 +339,8 @@ class SVDpp(AlgoBase):
         n_factors: The number of factors. Default is ``20``.
         n_epochs: The number of iteration of the SGD procedure. Default is
             ``20``.
+		biased(bool): Whether to use biases. See :ref:`note
+            <unbiased_note>` above.  Default is ``True``.
 		mean_centered(bool): Whether to mean center ratings. Default is ``True``.
         init_mean: The mean of the normal distribution for factor vectors
             initialization. Default is ``0``.
@@ -373,13 +375,14 @@ class SVDpp(AlgoBase):
         downweight: How much downweight the negatively treated missing values
     """
 
-    def __init__(self, n_factors=20, n_epochs=20, mean_centered=True, init_mean=0, init_std_dev=.1,
+    def __init__(self, n_factors=20, n_epochs=20, biased=True, mean_centered=True, init_mean=0, init_std_dev=.1,
                  lr_all=.007, reg_all=.02, lr_bu=None, lr_bi=None, lr_pu=None,
                  lr_qi=None, lr_yj=None, reg_bu=None, reg_bi=None, reg_pu=None,
                  reg_qi=None, reg_yj=None, verbose=False, amau=True, missing_val=0, downweight=.001):
 
         self.n_factors = n_factors
         self.n_epochs = n_epochs
+		self.biased = biased
 		self.mean_centered = mean_centered
         self.init_mean = init_mean
         self.init_std_dev = init_std_dev
@@ -481,14 +484,15 @@ class SVDpp(AlgoBase):
 		if self.mean_centered:
 			est += self.trainset.global_mean
 
-        if self.trainset.knows_user(u):
-            est += self.bu[u]
+		if self.biased:
+			if self.trainset.knows_user(u):
+				est += self.bu[u]
 
-        if self.trainset.knows_item(i):
-            est += self.bi[i]
+			if self.trainset.knows_item(i):
+				est += self.bi[i]
 
-        if self.trainset.knows_user(u) and self.trainset.knows_item(i):
-            Iu = len(self.trainset.ur[u])  # nb of items rated by u
+		if self.trainset.knows_user(u) and self.trainset.knows_item(i):
+			Iu = len(self.trainset.ur[u])  # nb of items rated by u
             u_impl_feedback = (sum(self.yj[j] for (j, _)
                                in self.trainset.ur[u]) / np.sqrt(Iu))
             est += np.dot(self.qi[i], self.pu[u] + u_impl_feedback)
@@ -537,9 +541,11 @@ class SVDpp(AlgoBase):
             dot += qi_i[f] * (pu_u[f] + u_impl_fdb[f])
 
         err = (r - (global_mean + buu + bii + dot))
-        #update biases    
-        bu_u += lr_bu * downweight * (err - reg_bu * bu_u)
-        bi_i += lr_bi * downweight * (err - reg_bi * bi_i)
+        
+		#update biases    
+        if self.biased:
+            bu_u += lr_bu * downweight * (err - reg_bu * bu_u)
+            bi_i += lr_bi * downweight * (err - reg_bi * bi_i)
         
         #update factors
         for f in range(self.n_factors):
