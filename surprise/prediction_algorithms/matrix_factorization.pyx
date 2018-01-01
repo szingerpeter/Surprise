@@ -111,16 +111,12 @@ class SVD(AlgoBase):
         downweight: How much downweight the negatively treated missing values
     """
 
-    def __init__(self, n_factors=100, n_epochs=20, biased=True, mean_centered=True, init_mean=0,
-                 init_std_dev=.1, lr_all=.005,
-                 reg_all=.02, lr_bu=None, lr_bi=None, lr_pu=None, lr_qi=None,
-                 reg_bu=None, reg_bi=None, reg_pu=None, reg_qi=None,
-                 verbose=False, amau=True, missing_val=0, downweight=.001):
+    def __init__(self, n_factors=100, n_epochs=20, biased=True, mean_centered=True, init_mean=0, init_std_dev=.1, lr_all=.005, reg_all=.02, lr_bu=None, lr_bi=None, lr_pu=None, lr_qi=None, reg_bu=None, reg_bi=None, reg_pu=None, reg_qi=None, verbose=False, amau=True, missing_val=0, downweight=.001):
 
         self.n_factors = n_factors
         self.n_epochs = n_epochs
         self.biased = biased
-		self.mean_centered = mean_centered
+        self.mean_centered = mean_centered
         self.init_mean = init_mean
         self.init_std_dev = init_std_dev
         self.lr_bu = lr_bu if lr_bu is not None else lr_all
@@ -191,7 +187,7 @@ class SVD(AlgoBase):
 		#cdef double missing_val = self.missing_val
         #cdef double downweight_rating
 
-		global_mean = self.trainset.global_mean
+        global_mean = self.trainset.global_mean
 		
         bu = np.zeros(trainset.n_users, np.double)
         bi = np.zeros(trainset.n_items, np.double)
@@ -202,7 +198,7 @@ class SVD(AlgoBase):
 
         
         if not self.mean_centered:
-			global_mean = 0
+            global_mean = 0
 
         for current_epoch in range(self.n_epochs):
             if self.verbose:
@@ -237,11 +233,11 @@ class SVD(AlgoBase):
         known_user = self.trainset.knows_user(u)
         known_item = self.trainset.knows_item(i)
 		
-		est = 0
+        est = 0
         if self.mean_centered:
             est += self.trainset.global_mean
 		
-		if self.biased:
+        if self.biased:
             if known_user:
                 est += self.bu[u]
 
@@ -261,7 +257,7 @@ class SVD(AlgoBase):
 
     def update(self, puu, qii, buu, bii, train_global_mean, rating, downweight_rating):
         cdef int f
-        cdef double err, dot, puuf, qiif, est
+        cdef double err, dot, est, #puuf, qiif
     
         cdef double global_mean = train_global_mean
         cdef np.ndarray[np.double_t, ndim=1] pu_u = puu
@@ -375,15 +371,12 @@ class SVDpp(AlgoBase):
         downweight: How much downweight the negatively treated missing values
     """
 
-    def __init__(self, n_factors=20, n_epochs=20, biased=True, mean_centered=True, init_mean=0, init_std_dev=.1,
-                 lr_all=.007, reg_all=.02, lr_bu=None, lr_bi=None, lr_pu=None,
-                 lr_qi=None, lr_yj=None, reg_bu=None, reg_bi=None, reg_pu=None,
-                 reg_qi=None, reg_yj=None, verbose=False, amau=True, missing_val=0, downweight=.001):
+    def __init__(self, n_factors=20, n_epochs=20, biased=True, mean_centered=True, init_mean=0, init_std_dev=.1, lr_all=.007, reg_all=.02, lr_bu=None, lr_bi=None, lr_pu=None, lr_qi=None, lr_yj=None, reg_bu=None, reg_bi=None, reg_pu=None, reg_qi=None, reg_yj=None, verbose=False, amau=True, missing_val=0, downweight=.001):
 
         self.n_factors = n_factors
         self.n_epochs = n_epochs
-		self.biased = biased
-		self.mean_centered = mean_centered
+        self.biased = biased
+        self.mean_centered = mean_centered
         self.init_mean = init_mean
         self.init_std_dev = init_std_dev
         self.lr_bu = lr_bu if lr_bu is not None else lr_all
@@ -427,7 +420,7 @@ class SVDpp(AlgoBase):
         #cdef double missing_val = self.missing_val
         #cdef double downweight_rating
 
-		global_mean = self.trainset.global_mean
+        global_mean = self.trainset.global_mean
 		
         bu = np.zeros(trainset.n_users, np.double)
         bi = np.zeros(trainset.n_items, np.double)
@@ -439,8 +432,8 @@ class SVDpp(AlgoBase):
         yj = np.random.normal(self.init_mean, self.init_std_dev,
                               (trainset.n_items, self.n_factors))
 							  
-		if not self.mean_centered:
-			global_mean = 0
+        if not self.mean_centered:
+            global_mean = 0
 
         for current_epoch in range(self.n_epochs):
             if self.verbose:
@@ -481,18 +474,18 @@ class SVDpp(AlgoBase):
 
         est = 0
 		
-		if self.mean_centered:
-			est += self.trainset.global_mean
+        if self.mean_centered:
+            est += self.trainset.global_mean
 
-		if self.biased:
-			if self.trainset.knows_user(u):
-				est += self.bu[u]
+        if self.biased:
+            if self.trainset.knows_user(u):
+                est += self.bu[u]
 
-			if self.trainset.knows_item(i):
-				est += self.bi[i]
+            if self.trainset.knows_item(i):
+                est += self.bi[i]
 
-		if self.trainset.knows_user(u) and self.trainset.knows_item(i):
-			Iu = len(self.trainset.ur[u])  # nb of items rated by u
+        if self.trainset.knows_user(u) and self.trainset.knows_item(i):
+            Iu = len(self.trainset.ur[u])  # nb of items rated by u
             u_impl_feedback = (sum(self.yj[j] for (j, _)
                                in self.trainset.ur[u]) / np.sqrt(Iu))
             est += np.dot(self.qi[i], self.pu[u] + u_impl_feedback)
@@ -501,7 +494,7 @@ class SVDpp(AlgoBase):
 
     def update(self, puu, qii, iu, yj, buu, bii, train_global_mean, rating, downweight_rating):
         cdef int f
-        cdef double err, dot, puuf, qiif, est
+        cdef double err, dot, est, #puuf, qiif
     
         cdef double global_mean = train_global_mean
         cdef np.ndarray[np.double_t] u_impl_fdb
@@ -637,14 +630,12 @@ class NMF(AlgoBase):
         verbose: If ``True``, prints the current epoch. Default is ``False``.
     """
 
-    def __init__(self, n_factors=15, n_epochs=50, biased=False, mean_centered=True, reg_pu=.06,
-                 reg_qi=.06, reg_bu=.02, reg_bi=.02, lr_bu=.005, lr_bi=.005,
-                 init_low=0, init_high=1, verbose=False, amau=True, missing_val=0, downweight=.001):
+    def __init__(self, n_factors=15, n_epochs=50, biased=False, mean_centered=True, reg_pu=.06, reg_qi=.06, reg_bu=.02, reg_bi=.02, lr_bu=.005, lr_bi=.005, init_low=0, init_high=1, verbose=False, amau=True, missing_val=0, downweight=.001):
 
         self.n_factors = n_factors
         self.n_epochs = n_epochs
         self.biased = biased
-		self.mean_centered = mean_centered
+        self.mean_centered = mean_centered
         self.reg_pu = reg_pu
         self.reg_qi = reg_qi
         self.lr_bu = lr_bu
@@ -688,8 +679,8 @@ class NMF(AlgoBase):
 		#cdef int f
         #cdef double r
 		#cdef est, l, dot, err
-        #cdef double reg_pu = self.reg_pu
-        #cdef double reg_qi = self.reg_qi
+        cdef double reg_pu = self.reg_pu
+        cdef double reg_qi = self.reg_qi
         #cdef double reg_bu = self.reg_bu
         #cdef double reg_bi = self.reg_bi
         #cdef double lr_bu = self.lr_bu
@@ -698,7 +689,7 @@ class NMF(AlgoBase):
         #cdef double missing_val = self.missing_val
         #cdef double downweight_rating
 
-		global_mean = self.trainset.global_mean
+        global_mean = self.trainset.global_mean
 		
         # Randomly initialize user and item factors
         pu = np.random.uniform(self.init_low, self.init_high,
@@ -724,7 +715,7 @@ class NMF(AlgoBase):
             item_denom = np.zeros((trainset.n_items, self.n_factors))
 
             if self.amau:
-				downweight_rating = 1
+                downweight_rating = 1
                 # Compute numerators and denominators for users and items factors
                 for u, i, r in trainset.all_ratings():
 
@@ -747,7 +738,7 @@ class NMF(AlgoBase):
                     #    item_num[i, f] += pu[u, f] * r
                     #    item_denom[i, f] += pu[u, f] * est
 				 
-				user_num[u], user_denom[u], item_num[i], item_denom[i], bu[u], bi[i] = self.update(pu[u], qi[i], user_num[u], user_denom[u], item_num[i], item_denom[i], bu[u], bi[i], global_mean, r, downweight)
+                    user_num[u], user_denom[u], item_num[i], item_denom[i], bu[u], bi[i] = self.update(pu[u], qi[i], user_num[u], user_denom[u], item_num[i], item_denom[i], bu[u], bi[i], global_mean, r, downweight_rating)
             else:
                 for u in trainset.all_users():
                     for i in trainset.all_items():
@@ -767,7 +758,7 @@ class NMF(AlgoBase):
                         else:
                             r = self.missing_val
                             downweight_rating *= self.downweight
-						user_num[u], user_denom[u], item_num[i], item_denom[i], bu[u], bi[i] = self.update(pu[u], qi[i], user_num[u], user_denom[u], item_num[i], item_denom[i], bu[u], bi[i], global_mean, r, downweight_rating)
+                        user_num[u], user_denom[u], item_num[i], item_denom[i], bu[u], bi[i] = self.update(pu[u], qi[i], user_num[u], user_denom[u], item_num[i], item_denom[i], bu[u], bi[i], global_mean, r, downweight_rating)
                         # update biases
                         #if self.biased:
                         #    bu[u] += lr_bu * (err - reg_bu * bu[u])
@@ -793,7 +784,6 @@ class NMF(AlgoBase):
                 for f in range(self.n_factors):
                     item_denom[i, f] += n_ratings * reg_qi * qi[i, f]
                     qi[i, f] *= item_num[i, f] / item_denom[i, f]
-
         self.bu = bu
         self.bi = bi
         self.pu = pu
@@ -805,11 +795,11 @@ class NMF(AlgoBase):
         known_user = self.trainset.knows_user(u)
         known_item = self.trainset.knows_item(i)
 
-		est = 0
+        est = 0
         if self.mean_centered:
             est += self.trainset.global_mean
 			
-		if self.biased:
+        if self.biased:
             if known_user:
                 est += self.bu[u]
 
@@ -827,17 +817,20 @@ class NMF(AlgoBase):
 
         return est
 
-	def update(self, puu, qii, u_num_u, u_denom_u, i_num_i, i_denom_i, buu, bii, train_global_mean, rating, downweight_rating):
+    def update(self, puu, qii, u_num_u, u_denom_u, i_num_i, i_denom_i, buu, bii, train_global_mean, rating, downweight_rating):
         cdef int f
-        cdef double err, dot, puuf, qiif, est
+        cdef double err, dot, est, #puuf, qiif
     
         cdef double global_mean = train_global_mean
-        cdef np.ndarray[np.double_t] u_impl_fdb
+        #cdef np.ndarray[np.double_t] u_impl_fdb
         cdef np.ndarray[np.double_t, ndim=1] pu_u = puu
         cdef np.ndarray[np.double_t, ndim=1] qi_i = qii
-        cdef list Iu = iu
-        cdef np.ndarray[np.double_t, ndim=2] Yj = yj
-		cdef np.ndarray[np.double_t, ndim=1] user_num_u, user_denom_u, item_num_i, item_denom_i = u_num_u, u_denom_u, i_num_i, i_denom_i
+        #cdef list Iu = iu
+        #cdef np.ndarray[np.double_t, ndim=1] user_num_u, user_denom_u, item_num_i, item_denom_i = u_num_u, u_denom_u, i_num_i, i_denom_i
+        cdef np.ndarray[np.double_t, ndim=1] user_num_u = u_num_u
+        cdef np.ndarray[np.double_t, ndim=1] user_denom_u = u_denom_u
+        cdef np.ndarray[np.double_t, ndim=1] item_num_i = i_num_i,
+        cdef np.ndarray[np.double_t, ndim=1] item_denom_i = i_denom_i        
         cdef double bu_u = buu
         cdef double bi_i = bii
 
@@ -845,35 +838,33 @@ class NMF(AlgoBase):
         cdef double r = rating
         cdef double lr_bu = self.lr_bu
         cdef double lr_bi = self.lr_bi
-        cdef double lr_pu = self.lr_pu
-        cdef double lr_qi = self.lr_qi
-        cdef double lr_yj = self.lr_yj
+        #cdef double lr_pu = self.lr_pu
+        #cdef double lr_qi = self.lr_qi
     
         cdef double reg_bu = self.reg_bu
         cdef double reg_bi = self.reg_bi
-        cdef double reg_pu = self.reg_pu
-        cdef double reg_qi = self.reg_qi
-        cdef double reg_yj = self.reg_yj
+        #cdef double reg_pu = self.reg_pu
+        #cdef double reg_qi = self.reg_qi
         cdef double downweight = downweight_rating
 
-	
-		# compute current estimation and error
+
+        # compute current estimation and error
         dot = 0  # <q_i, p_u>
         for f in range(self.n_factors):
-			dot += qi_i[f] * pu_u[f]
+            dot += qi_i[f] * pu_u[f]
         est = global_mean + bu_u + bi_i + dot
-		err = r - est
-		
-		# update biases
-		if self.biased:
-			bu_u += lr_bu * downweight * (err - reg_bu * bu_u)
-			bi_i += lr_bi * downweight * (err - reg_bi * bi_i)
-		
-		# compute numerators and denominators
-		for f in range(self.n_factors):
-			user_num_u[f] += qi_i[f] * r
-			user_denom_u[f] += qi_i[f] * est
-			item_num_i[f] += pu_u[f] * r_ui
-			item_denom_i[f] += pu_u[f] * est
-		
-		return user_num_u, user_denom_u, item_num_i, item_denom_i, bu_u, bi_i
+        err = r - est
+
+        # update biases
+        if self.biased:
+            bu_u += lr_bu * downweight * (err - reg_bu * bu_u)
+            bi_i += lr_bi * downweight * (err - reg_bi * bi_i)
+
+        # compute numerators and denominators
+        for f in range(self.n_factors):
+            user_num_u[f] += qi_i[f] * r
+            user_denom_u[f] += qi_i[f] * est
+            item_num_i[f] += pu_u[f] * r
+            item_denom_i[f] += pu_u[f] * est
+
+        return user_num_u, user_denom_u, item_num_i, item_denom_i, bu_u, bi_i

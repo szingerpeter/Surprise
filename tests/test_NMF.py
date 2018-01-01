@@ -82,10 +82,10 @@ def test_NMF_parameters():
     rmse_aman = evaluate(algo, data, measures=['rmse'])['rmse']
     assert rmse_default != rmse_aman
 	
-	# Mean - centered
-	algo = NMF(n_factors=1, n_epochs=1, mean_centered=False)
-	rmse_mean_centered = evaluate(algo, data, measures=['rmse'])['rmse']
-	assert rmse_default != rmse_mean_centered
+    # Mean - centered
+    algo = NMF(n_factors=1, n_epochs=1, mean_centered=False)
+    rmse_mean_centered = evaluate(algo, data, measures=['rmse'])['rmse']
+    assert rmse_default != rmse_mean_centered
 	
     # init_low
     with pytest.raises(ValueError):

@@ -97,10 +97,10 @@ def test_SVD_parameters():
     rmse_aman = evaluate(algo, data, measures=['rmse'])['rmse']
     assert rmse_default != rmse_aman
 	
-	# Mean - centered
-	algo = SVD(n_factors=1, n_epochs=1, mean_centered=False)
-	rmse_mean_centered = evaluate(algo, data, measures=['rmse'])['rmse']
-	assert rmse_default != rmse_mean_centered
+    # Mean - centered
+    algo = SVD(n_factors=1, n_epochs=1, mean_centered=False)
+    rmse_mean_centered = evaluate(algo, data, measures=['rmse'])['rmse']
+    assert rmse_default != rmse_mean_centered
 
 
 def test_SVDpp_parameters():
@@ -120,12 +120,12 @@ def test_SVDpp_parameters():
     rmse_aman = evaluate(algo, data, measures=['rmse'])['rmse']
     assert rmse_default != rmse_aman
 	
-	# Mean - centered
-	algo = SVDpp(n_factors=1, n_epochs=1, mean_centered=False)
-	rmse_mean_centered = evaluate(algo, data, measures=['rmse'])['rmse']
-	assert rmse_default != rmse_mean_centered
+    # Mean - centered
+    algo = SVDpp(n_factors=1, n_epochs=1, mean_centered=False)
+    rmse_mean_centered = evaluate(algo, data, measures=['rmse'])['rmse']
+    assert rmse_default != rmse_mean_centered
 	
-	# biased
+    # biased
     algo = SVD(n_factors=1, n_epochs=1, biased=False)
     rmse_biased = evaluate(algo, data, measures=['rmse'])['rmse']
     assert rmse_default != rmse_biased
