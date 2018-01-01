@@ -182,12 +182,11 @@ class SVD(AlgoBase):
         # item factors
         cdef np.ndarray[np.double_t, ndim=2] qi
 
-        #cdef int u, i
-		#cdef double global_mean = self.trainset.global_mean
-		#cdef double missing_val = self.missing_val
-        #cdef double downweight_rating
-
-        global_mean = self.trainset.global_mean
+        cdef int u, i
+        cdef double r
+		cdef double global_mean = self.trainset.global_mean
+		cdef double missing_val = self.missing_val
+        cdef double downweight_rating
 		
         bu = np.zeros(trainset.n_users, np.double)
         bi = np.zeros(trainset.n_items, np.double)
@@ -217,7 +216,7 @@ class SVD(AlgoBase):
                         if rating != None:
                             r = rating
                         else:
-                            r = self.missing_val
+                            r = missing_val
                             downweight_rating *= self.downweight
                         pu[u], qi[i], bu[u], bi[i] = self.update(pu[u], qi[i], bu[u], bi[i], global_mean, r, downweight_rating)               	
 
@@ -257,7 +256,7 @@ class SVD(AlgoBase):
 
     def update(self, puu, qii, buu, bii, train_global_mean, rating, downweight_rating):
         cdef int f
-        cdef double err, dot, est, #puuf, qiif
+        cdef double err, dot, est
     
         cdef double global_mean = train_global_mean
         cdef np.ndarray[np.double_t, ndim=1] pu_u = puu
@@ -415,12 +414,11 @@ class SVDpp(AlgoBase):
         cdef np.ndarray[np.double_t, ndim=2] yj
 
         cdef int u, i, j
-        cdef double _ 
-        #cdef double global_mean = self.trainset.global_mean
-        #cdef double missing_val = self.missing_val
-        #cdef double downweight_rating
+        cdef double _, r
+        cdef double global_mean = self.trainset.global_mean
+        cdef double missing_val = self.missing_val
+        cdef double downweight_rating
 
-        global_mean = self.trainset.global_mean
 		
         bu = np.zeros(trainset.n_users, np.double)
         bi = np.zeros(trainset.n_items, np.double)
@@ -457,7 +455,7 @@ class SVDpp(AlgoBase):
                         if rating != None:
                             r = rating
                         else:
-                            r = self.missing_val
+                            r = missing_val
                             downweight_rating *= self.downweight
                         pu[u], qi[i], yj_updated, bu[u], bi[i] = self.update(pu[u], qi[i], Iu, yj, bu[u], bi[i], global_mean, r, downweight_rating)
                         for j in Iu:
@@ -494,7 +492,7 @@ class SVDpp(AlgoBase):
 
     def update(self, puu, qii, iu, yj, buu, bii, train_global_mean, rating, downweight_rating):
         cdef int f
-        cdef double err, dot, est, #puuf, qiif
+        cdef double err, dot, est
     
         cdef double global_mean = train_global_mean
         cdef np.ndarray[np.double_t] u_impl_fdb
@@ -675,21 +673,13 @@ class NMF(AlgoBase):
         cdef np.ndarray[np.double_t, ndim=2] item_num
         cdef np.ndarray[np.double_t, ndim=2] item_denom
 
-        #cdef int u, i
-		#cdef int f
-        #cdef double r
-		#cdef est, l, dot, err
+        cdef int u, i
+        cdef double r
         cdef double reg_pu = self.reg_pu
         cdef double reg_qi = self.reg_qi
-        #cdef double reg_bu = self.reg_bu
-        #cdef double reg_bi = self.reg_bi
-        #cdef double lr_bu = self.lr_bu
-        #cdef double lr_bi = self.lr_bi
-        #cdef double global_mean = self.trainset.global_mean
-        #cdef double missing_val = self.missing_val
-        #cdef double downweight_rating
-
-        global_mean = self.trainset.global_mean
+        cdef double global_mean = self.trainset.global_mean
+        cdef double missing_val = self.missing_val
+        cdef double downweight_rating
 		
         # Randomly initialize user and item factors
         pu = np.random.uniform(self.init_low, self.init_high,
@@ -717,59 +707,21 @@ class NMF(AlgoBase):
             if self.amau:
                 downweight_rating = 1
                 # Compute numerators and denominators for users and items factors
-                for u, i, r in trainset.all_ratings():
-
-                    # compute current estimation and error
-                    #dot = 0  # <q_i, p_u>
-                    #for f in range(self.n_factors):
-                    #    dot += qi[i, f] * pu[u, f]
-                    #est = global_mean + bu[u] + bi[i] + dot
-                    #err = r - est
-
-                    # update biases
-                    #if self.biased:
-                    #    bu[u] += lr_bu * (err - reg_bu * bu[u])
-                    #    bi[i] += lr_bi * (err - reg_bi * bi[i])
-
-                    # compute numerators and denominators
-                    #for f in range(self.n_factors):
-                    #    user_num[u, f] += qi[i, f] * r
-                    #    user_denom[u, f] += qi[i, f] * est
-                    #    item_num[i, f] += pu[u, f] * r
-                    #    item_denom[i, f] += pu[u, f] * est
-				 
+                for u, i, r in trainset.all_ratings():				 
                     user_num[u], user_denom[u], item_num[i], item_denom[i], bu[u], bi[i] = self.update(pu[u], qi[i], user_num[u], user_denom[u], item_num[i], item_denom[i], bu[u], bi[i], global_mean, r, downweight_rating)
+
             else:
                 for u in trainset.all_users():
                     for i in trainset.all_items():
                         downweight_rating = 1                        
-	
-                        # compute current estimation and error
-                        #dot = 0  # <q_i, p_u>
-                        #for f in range(self.n_factors):
-                        #    dot += qi[i, f] * pu[u, f]
-                        #est = global_mean + bu[u] + bi[i] + dot
-                        #err = r - est
 
                         rating = trainset.get_rating(u, i)
                         if rating != None:
                             r = rating                            
-                        #    err = (r - (global_mean + bu[u] + bi[i] + dot))
                         else:
-                            r = self.missing_val
+                            r = missing_val
                             downweight_rating *= self.downweight
                         user_num[u], user_denom[u], item_num[i], item_denom[i], bu[u], bi[i] = self.update(pu[u], qi[i], user_num[u], user_denom[u], item_num[i], item_denom[i], bu[u], bi[i], global_mean, r, downweight_rating)
-                        # update biases
-                        #if self.biased:
-                        #    bu[u] += lr_bu * (err - reg_bu * bu[u])
-                        #    bi[i] += lr_bi * (err - reg_bi * bi[i])
-
-                        # compute numerators and denominators
-                        #for f in range(self.n_factors):
-                        #    user_num[u, f] += qi[i, f] * r
-                        #    user_denom[u, f] += qi[i, f] * est
-                        #    item_num[i, f] += pu[u, f] * r
-                        #    item_denom[i, f] += pu[u, f] * est
             
             # Update user factors
             for u in trainset.all_users():
@@ -819,14 +771,11 @@ class NMF(AlgoBase):
 
     def update(self, puu, qii, u_num_u, u_denom_u, i_num_i, i_denom_i, buu, bii, train_global_mean, rating, downweight_rating):
         cdef int f
-        cdef double err, dot, est, #puuf, qiif
+        cdef double err, dot, est
     
         cdef double global_mean = train_global_mean
-        #cdef np.ndarray[np.double_t] u_impl_fdb
         cdef np.ndarray[np.double_t, ndim=1] pu_u = puu
         cdef np.ndarray[np.double_t, ndim=1] qi_i = qii
-        #cdef list Iu = iu
-        #cdef np.ndarray[np.double_t, ndim=1] user_num_u, user_denom_u, item_num_i, item_denom_i = u_num_u, u_denom_u, i_num_i, i_denom_i
         cdef np.ndarray[np.double_t, ndim=1] user_num_u = u_num_u
         cdef np.ndarray[np.double_t, ndim=1] user_denom_u = u_denom_u
         cdef np.ndarray[np.double_t, ndim=1] item_num_i = i_num_i,
@@ -838,13 +787,9 @@ class NMF(AlgoBase):
         cdef double r = rating
         cdef double lr_bu = self.lr_bu
         cdef double lr_bi = self.lr_bi
-        #cdef double lr_pu = self.lr_pu
-        #cdef double lr_qi = self.lr_qi
     
         cdef double reg_bu = self.reg_bu
         cdef double reg_bi = self.reg_bi
-        #cdef double reg_pu = self.reg_pu
-        #cdef double reg_qi = self.reg_qi
         cdef double downweight = downweight_rating
 
 
