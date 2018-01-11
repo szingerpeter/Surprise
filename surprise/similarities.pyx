@@ -95,6 +95,72 @@ def cosine(n_x, yr, min_support):
 
     return sim
 
+def mad(n_x, yr, min_support):
+    """Compute the Mean Absolute Difference similarity between all pairs of 
+    users (or items).
+
+    Only **common** users (or items) are takin into account. The Mean Absolute 
+    Difference is defined as:
+
+    .. math ::
+        \text{mad}(u, v) = \\frac{1}{|I_{uv}|} \cdot
+        \\sum\\limits_{i \in I{uv}} (r_{ui} - r_{vi})^2
+
+    or
+
+    .. math ::
+        \text{mad}(i, j) = \\frac{1}{|U_{ij}|} \cdot
+        \\sum\\limits_{u \in U{ij}} (r_{ui} - r_{uj})^2
+
+    ``user_based`` field of ``sim_options`` (see
+    :ref:`similarity_measures_configuration`).
+
+    The MAD-similarity is then defined as:
+ 
+    .. math ::
+        \\text{mad_sim}(u, v) &= \\frac{1}{\\text{mad}(u, v) + 1}\\\\
+        \\text{mad_sim}(i, j) &= \\frac{1}{\\text{mad}(i, j) + 1}
+
+    The :math:`+ 1` term is just here to avoid dividing by zero.
+
+
+    For details on MAD, see third definition on `Wikipedia
+    <https://en.wikipedia.org/wiki/Mean_absolute_difference#Calculation>`__.
+
+    """
+
+    # sum |r_xy - r_x'y| for common ys
+    cdef np.ndarray[np.double_t, ndim=2] abs_diff
+    # number of common ys
+    cdef np.ndarray[np.int_t, ndim=2] freq
+    # the similarity matrix
+    cdef np.ndarray[np.double_t, ndim=2] sim
+
+    cdef int xi, xj, ri, rj
+    cdef int min_sprt = min_support
+
+    sq_diff = np.zeros((n_x, n_x), np.double)
+    freq = np.zeros((n_x, n_x), np.int)
+    sim = np.zeros((n_x, n_x), np.double)
+
+    for y, y_ratings in iteritems(yr):
+        for xi, ri in y_ratings:
+            for xj, rj in y_ratings:
+                abs_diff[xi, xj] += np.abs(ri - rj)
+                freq[xi, xj] += 1
+
+    for xi in range(n_x):
+        sim[xi, xi] = 1  # completely arbitrary and useless anyway
+        for xj in range(xi + 1, n_x):
+            if freq[xi, xj] < min_sprt:
+                sim[xi, xj] == 0
+            else:
+                # return inverse of (mad + 1) (+ 1 to avoid dividing by zero)
+                sim[xi, xj] = 1 / (abs_diff[xi, xj] / freq[xi, xj] + 1)
+
+            sim[xj, xi] = sim[xi, xj]
+
+    return sim
 
 def msd(n_x, yr, min_support):
     """Compute the Mean Squared Difference similarity between all pairs of
