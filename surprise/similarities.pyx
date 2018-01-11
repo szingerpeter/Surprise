@@ -139,7 +139,7 @@ def mad(n_x, yr, min_support):
     cdef int xi, xj, ri, rj
     cdef int min_sprt = min_support
 
-    sq_diff = np.zeros((n_x, n_x), np.double)
+    abs_diff = np.zeros((n_x, n_x), np.double)
     freq = np.zeros((n_x, n_x), np.int)
     sim = np.zeros((n_x, n_x), np.double)
 

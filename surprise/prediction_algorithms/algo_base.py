@@ -214,7 +214,10 @@ class AlgoBase:
 
         min_support = self.sim_options.get('min_support', 1)
 
-        args = [n_x, yr, min_support]
+        kwargs = {}
+        kwargs.update({"n_x": n_x})
+        kwargs.update({"yr": yr})
+        kwargs.update({"min_support": min_support})
 
         name = self.sim_options.get('name', 'msd').lower()
         if name == 'pearson_baseline':
@@ -224,12 +227,15 @@ class AlgoBase:
                 bx, by = bu, bi
             else:
                 bx, by = bi, bu
-
-            args += [self.trainset.global_mean, bx, by, shrinkage]
+            
+            kwargs.update({"global_mean": self.trainset.global_mean})
+            kwargs.update({"x_biases": bx})
+            kwargs.update({"y_biases": by})
+            kwargs.update({"shrinkage": shrinkage})
 
         try:
             print('Computing the {0} similarity matrix...'.format(name))
-            sim = construction_func[name](*args)
+            sim = construction_func[name](**kwargs)
             print('Done computing similarity matrix.')
             return sim
         except KeyError:

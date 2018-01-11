@@ -184,8 +184,8 @@ class SVD(AlgoBase):
 
         cdef int u, i
         cdef double r
-		cdef double global_mean = self.trainset.global_mean
-		cdef double missing_val = self.missing_val
+        cdef double global_mean = self.trainset.global_mean
+        cdef double missing_val = self.missing_val
         cdef double downweight_rating
 		
         bu = np.zeros(trainset.n_users, np.double)
