@@ -213,11 +213,15 @@ class AlgoBase:
             n_x, yr = self.trainset.n_items, self.trainset.ur
 
         min_support = self.sim_options.get('min_support', 1)
+        significance_weighting = self.sim_options.get('significance_weighting', False)
+        beta = self.sim_options.get('significance_beta', 50)        
 
         kwargs = {}
-        kwargs.update({"n_x": n_x})
-        kwargs.update({"yr": yr})
-        kwargs.update({"min_support": min_support})
+        kwargs.update({'n_x': n_x})
+        kwargs.update({'yr': yr})
+        kwargs.update({'min_support': min_support})
+        kwargs.update({'significance_weighting': significance_weighting})
+        kwargs.update({'significance_beta': beta})
 
         name = self.sim_options.get('name', 'msd').lower()
         if name == 'pearson_baseline':
@@ -228,10 +232,10 @@ class AlgoBase:
             else:
                 bx, by = bi, bu
             
-            kwargs.update({"global_mean": self.trainset.global_mean})
-            kwargs.update({"x_biases": bx})
-            kwargs.update({"y_biases": by})
-            kwargs.update({"shrinkage": shrinkage})
+            kwargs.update({'global_mean': self.trainset.global_mean})
+            kwargs.update({'x_biases': bx})
+            kwargs.update({'y_biases': by})
+            kwargs.update({'shrinkage': shrinkage})
 
         try:
             print('Computing the {0} similarity matrix...'.format(name))

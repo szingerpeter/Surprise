@@ -10,6 +10,7 @@ Available similarity measures:
     :nosignatures:
 
     cosine
+    mad
     msd
     pearson
     pearson_baseline
@@ -25,7 +26,7 @@ from six.moves import range
 from six import iteritems
 
 
-def cosine(n_x, yr, min_support):
+def cosine(n_x, yr, min_support, significance_weighting=False, significance_beta=50):
     """Compute the cosine similarity between all pairs of users (or items).
 
     Only **common** users (or items) are taken into account. The cosine
@@ -67,6 +68,7 @@ def cosine(n_x, yr, min_support):
 
     cdef int xi, xj, ri, rj
     cdef int min_sprt = min_support
+    cdef double beta = significance_beta
 
     prods = np.zeros((n_x, n_x), np.int)
     freq = np.zeros((n_x, n_x), np.int)
@@ -90,12 +92,13 @@ def cosine(n_x, yr, min_support):
             else:
                 denum = np.sqrt(sqi[xi, xj] * sqj[xi, xj])
                 sim[xi, xj] = prods[xi, xj] / denum
+                sim[xi, xj] *= (freq[xi, xj] / beta) if significance_weighting else 1
 
             sim[xj, xi] = sim[xi, xj]
 
     return sim
 
-def mad(n_x, yr, min_support):
+def mad(n_x, yr, min_support, significance_weighting=False, significance_beta=50):
     """Compute the Mean Absolute Difference similarity between all pairs of 
     users (or items).
 
@@ -138,11 +141,13 @@ def mad(n_x, yr, min_support):
 
     cdef int xi, xj, ri, rj
     cdef int min_sprt = min_support
+    cdef double beta = significance_beta
 
     abs_diff = np.zeros((n_x, n_x), np.double)
     freq = np.zeros((n_x, n_x), np.int)
     sim = np.zeros((n_x, n_x), np.double)
 
+    #this might have to be changed when we get to default voting, let's leave it for now
     for y, y_ratings in iteritems(yr):
         for xi, ri in y_ratings:
             for xj, rj in y_ratings:
@@ -155,14 +160,15 @@ def mad(n_x, yr, min_support):
             if freq[xi, xj] < min_sprt:
                 sim[xi, xj] == 0
             else:
-                # return inverse of (mad + 1) (+ 1 to avoid dividing by zero)
+                # inverse of (mad + 1) (+ 1 to avoid dividing by zero)
                 sim[xi, xj] = 1 / (abs_diff[xi, xj] / freq[xi, xj] + 1)
+                sim[xi, xj] *= (freq[xi, xj] / beta) if significance_weighting else 1
 
             sim[xj, xi] = sim[xi, xj]
 
     return sim
 
-def msd(n_x, yr, min_support):
+def msd(n_x, yr, min_support, significance_weighting=False, significance_beta=50):
     """Compute the Mean Squared Difference similarity between all pairs of
     users (or items).
 
@@ -205,6 +211,7 @@ def msd(n_x, yr, min_support):
 
     cdef int xi, xj, ri, rj
     cdef int min_sprt = min_support
+    cdef double beta = significance_beta
 
     sq_diff = np.zeros((n_x, n_x), np.double)
     freq = np.zeros((n_x, n_x), np.int)
@@ -224,13 +231,14 @@ def msd(n_x, yr, min_support):
             else:
                 # return inverse of (msd + 1) (+ 1 to avoid dividing by zero)
                 sim[xi, xj] = 1 / (sq_diff[xi, xj] / freq[xi, xj] + 1)
+                sim[xi, xj] *= (freq[xi, xj] / beta) if significance_weighting else 1
 
             sim[xj, xi] = sim[xi, xj]
 
     return sim
 
 
-def pearson(n_x, yr, min_support):
+def pearson(n_x, yr, min_support, significance_weighting=False, significance_beta=50):
     """Compute the Pearson correlation coefficient between all pairs of users
     (or items).
 
@@ -281,6 +289,7 @@ def pearson(n_x, yr, min_support):
 
     cdef int xi, xj, ri, rj
     cdef int min_sprt = min_support
+    cdef double beta = significance_beta
 
     freq = np.zeros((n_x, n_x), np.int)
     prods = np.zeros((n_x, n_x), np.int)
@@ -315,6 +324,7 @@ def pearson(n_x, yr, min_support):
                     sim[xi, xj] = 0
                 else:
                     sim[xi, xj] = num / denum
+                    sim[xi, xj] *= (freq[xi, xj] / beta) if significance_weighting else 1
 
             sim[xj, xi] = sim[xi, xj]
 
@@ -422,3 +432,15 @@ def pearson_baseline(n_x, yr, min_support, global_mean, x_biases, y_biases,
             sim[xj, xi] = sim[xi, xj]
 
     return sim
+
+
+def var_weighting_general(yr):
+    """Calculating variance weighting term of user/item var_i 
+    """
+    return None
+
+def var_weighting():
+    """Calculating variance weighting general terms of user/item 
+    var_max and var_min
+    """
+    return None
