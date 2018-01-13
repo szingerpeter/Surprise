@@ -6,6 +6,7 @@ import random as rd
 import sys
 import shutil
 import argparse
+import os
 
 import numpy as np
 
@@ -21,8 +22,10 @@ from surprise.prediction_algorithms import SlopeOne
 from surprise.prediction_algorithms import CoClustering
 import surprise.dataset as dataset
 from surprise.dataset import Dataset
-from surprise.dataset import Reader  # noqa
-from surprise.evaluate import evaluate
+from surprise.builtin_datasets import get_dataset_dir
+from surprise.model_selection import cross_validate
+from surprise.model_selection import KFold
+from surprise.model_selection import PredefinedKFold
 from surprise import __version__
 
 
@@ -127,7 +130,7 @@ def main():
 
     parser.add_argument('--with-dump', dest='with_dump', action='store_true',
                         help='Dump the algorithm ' +
-                        'results in a file (one file per fold)' +
+                        'results in a file (one file per fold). ' +
                         'Default is False.'
                         )
 
@@ -136,11 +139,11 @@ def main():
                         default=None,
                         help='Where to dump the files. Ignored if ' +
                         'with-dump is not set. Default is ' +
-                        '~/.surprise_data/dumps.'
+                        os.path.join(get_dataset_dir(), 'dumps/')
                         )
 
     parser.add_argument('--clean', dest='clean', action='store_true',
-                        help='Remove the ' + dataset.DATASETS_DIR +
+                        help='Remove the ' + get_dataset_dir() +
                         ' directory and exit.'
                         )
 
@@ -150,8 +153,9 @@ def main():
     args = parser.parse_args()
 
     if args.clean:
-        shutil.rmtree(dataset.DATASETS_DIR)
-        print('Removed', dataset.DATASETS_DIR)
+        folder = get_dataset_dir()
+        shutil.rmtree(folder)
+        print('Removed', folder)
         exit()
 
     # setup RNG
@@ -170,7 +174,7 @@ def main():
             parser.error('-reader parameter is needed.')
         reader = eval(args.reader)
         data = Dataset.load_from_file(args.load_custom, reader=reader)
-        data.split(n_folds=args.n_folds)
+        cv = KFold(n_splits=args.n_folds, random_state=args.seed)
 
     elif args.folds_files is not None:  # load from files
         if args.reader is None:
@@ -180,12 +184,13 @@ def main():
         folds_files = [(folds_files[i], folds_files[i + 1])
                        for i in range(0, len(folds_files) - 1, 2)]
         data = Dataset.load_from_folds(folds_files=folds_files, reader=reader)
+        cv = PredefinedKFold()
 
     else:  # load builtin dataset and split
         data = Dataset.load_builtin(args.load_builtin)
-        data.split(n_folds=args.n_folds)
+        cv = KFold(n_splits=args.n_folds, random_state=args.seed)
 
-    evaluate(algo, data, with_dump=args.with_dump, dump_dir=args.dump_dir)
+    cross_validate(algo, data, cv=cv, verbose=True)
 
 
 if __name__ == "__main__":

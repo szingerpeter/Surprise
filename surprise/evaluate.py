@@ -1,5 +1,5 @@
-"""The :mod:`evaluate` module defines the :func:`evaluate` function and
-:class:`GridSearch` class """
+"""The :mod:`evaluate <surprise.evaluate>` module defines the :func:`evaluate`
+function and :class:`GridSearch` class """
 
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
@@ -8,6 +8,7 @@ import time
 import os
 from itertools import product
 import random
+import warnings
 
 import numpy as np
 from six import iteritems
@@ -15,16 +16,25 @@ from six import itervalues
 from joblib import Parallel
 from joblib import delayed
 
+from .builtin_datasets import get_dataset_dir
 from . import accuracy
 from .dump import dump
 
 
 def evaluate(algo, data, measures=['rmse', 'mae'], with_dump=False,
              dump_dir=None, verbose=1):
-    """Evaluate the performance of the algorithm on given data.
+    """
+    .. warning::
+        Deprecated since version 1.05.  Use :func:`cross_validate
+        <surprise.model_selection.validation.cross_validate>` instead. This
+        function will be removed in later versions.
+
+    Evaluate the performance of the algorithm on given data.
 
     Depending on the nature of the ``data`` parameter, it may or may not
     perform cross validation.
+
+
 
     Args:
         algo(:obj:`AlgoBase \
@@ -40,7 +50,9 @@ def evaluate(algo, data, measures=['rmse', 'mae'], with_dump=False,
             <serialize_an_algorithm>`). The file names will be set as:
             ``'<date>-<algorithm name>-<fold number>'``.  Default is ``False``.
         dump_dir(str): The directory where to dump to files. Default is
-            ``'~/.surprise_data/dumps/'``.
+            ``'~/.surprise_data/dumps/'``, or the folder specified by the
+            ``'SURPRISE_DATA_FOLDER'`` environment variable (see :ref:`FAQ
+            <data_folder>`).
         verbose(int): Level of verbosity. If 0, nothing is printed. If 1
             (default), accuracy measures for each folds are printed, with a
             final summary. If 2, every prediction is printed.
@@ -49,6 +61,9 @@ def evaluate(algo, data, measures=['rmse', 'mae'], with_dump=False,
         A dictionary containing measures as keys and lists as values. Each list
         contains one entry per fold.
     """
+
+    warnings.warn('The evaluate() method is deprecated. Please use '
+                  'model_selection.cross_validate() instead.', UserWarning)
 
     performances = CaseInsensitiveDefaultDict(list)
 
@@ -65,7 +80,7 @@ def evaluate(algo, data, measures=['rmse', 'mae'], with_dump=False,
             print('Fold ' + str(fold_i + 1))
 
         # train and test algorithm. Keep all rating predictions in a list
-        algo.train(trainset)
+        algo.fit(trainset)
         predictions = algo.test(testset, verbose=(verbose == 2))
 
         # compute needed performance statistics
@@ -76,7 +91,7 @@ def evaluate(algo, data, measures=['rmse', 'mae'], with_dump=False,
         if with_dump:
 
             if dump_dir is None:
-                dump_dir = os.path.expanduser('~') + '/.surprise_data/dumps/'
+                dump_dir = os.path.join(get_dataset_dir(), 'dumps/')
 
             if not os.path.exists(dump_dir):
                 os.makedirs(dump_dir)
@@ -101,7 +116,13 @@ def evaluate(algo, data, measures=['rmse', 'mae'], with_dump=False,
 
 
 class GridSearch:
-    """The :class:`GridSearch` class, used to evaluate the performance of an
+    """
+    .. warning::
+        Deprecated since version 1.05. Use :func:`GridSearchCV
+        <surprise.model_selection.search.GridSearchCV>` instead. This
+        class will be removed in later versions.
+
+    The :class:`GridSearch` class, used to evaluate the performance of an
     algorithm on various combinations of parameters, and extract the best
     combination. It is analogous to `GridSearchCV
     <http://scikit-learn.org/stable/modules/generated/sklearn.
@@ -206,6 +227,9 @@ class GridSearch:
 
         self.param_combinations = [dict(zip(self.param_grid, v)) for v in
                                    product(*self.param_grid.values())]
+
+        warnings.warn('The GridSearch() class is deprecated. Please use '
+                      'model_selection.GridSearchCV instead.', UserWarning)
 
     def evaluate(self, data):
         """Runs the grid search on dataset.

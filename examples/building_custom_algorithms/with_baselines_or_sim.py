@@ -8,7 +8,7 @@ from __future__ import (absolute_import, division, print_function,
 
 from surprise import AlgoBase
 from surprise import Dataset
-from surprise import evaluate
+from surprise.model_selection import cross_validate
 from surprise import PredictionImpossible
 
 
@@ -19,13 +19,15 @@ class MyOwnAlgorithm(AlgoBase):
         AlgoBase.__init__(self, sim_options=sim_options,
                           bsl_options=bsl_options)
 
-    def train(self, trainset):
+    def fit(self, trainset):
 
-        AlgoBase.train(self, trainset)
+        AlgoBase.fit(self, trainset)
 
         # Compute baselines and similarities
         self.bu, self.bi = self.compute_baselines()
         self.sim = self.compute_similarities()
+
+        return self
 
     def estimate(self, u, i):
 
@@ -50,4 +52,4 @@ class MyOwnAlgorithm(AlgoBase):
 data = Dataset.load_builtin('ml-100k')
 algo = MyOwnAlgorithm()
 
-evaluate(algo, data)
+cross_validate(algo, data, verbose=True)

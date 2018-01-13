@@ -1,5 +1,6 @@
 """
-the :mod:`dataset` module defines some tools for managing datasets.
+The :mod:`dataset <surprise.dataset>` module defines the :class:`Dataset` class
+and other subclasses which are used for managing datasets.
 
 Users may use both *built-in* and user-defined datasets (see the
 :ref:`getting_started` page for examples). Right now, three built-in datasets
@@ -10,10 +11,7 @@ are available:
 * The `Jester <http://eigentaste.berkeley.edu/dataset/>`_ dataset 2.
 
 Built-in datasets can all be loaded (or downloaded if you haven't already)
-using the :meth:`Dataset.load_builtin` method. For each built-in dataset,
-Surprise also provide predefined :class:`readers <Reader>` which are useful if
-you want to use a custom dataset that has the same format as a built-in one.
-
+using the :meth:`Dataset.load_builtin` method.
 Summary:
 
 .. autosummary::
@@ -24,63 +22,25 @@ Summary:
     Dataset.load_from_folds
     Dataset.folds
     DatasetAutoFolds.split
-    Reader
-    Trainset
 """
 
 
 from __future__ import (absolute_import, division, print_function,
                         unicode_literals)
 from collections import defaultdict
-from collections import namedtuple
 import sys
 import os
-import zipfile
 import itertools
 import random
+import warnings
 
-import numpy as np
 from six.moves import input
-from six.moves.urllib.request import urlretrieve
 from six.moves import range
-from six import iteritems
 
-
-# directory where builtin datasets are stored. For now it's in the home
-# directory under the .surprise_data. May be ask user to define it?
-DATASETS_DIR = os.path.expanduser('~') + '/.surprise_data/'
-
-# a builtin dataset has
-# - an url (where to download it)
-# - a path (where it is located on the filesystem)
-# - the parameters of the corresponding reader
-BuiltinDataset = namedtuple('BuiltinDataset', ['url', 'path', 'reader_params'])
-
-BUILTIN_DATASETS = {
-    'ml-100k':
-        BuiltinDataset(
-            url='http://files.grouplens.org/datasets/movielens/ml-100k.zip',
-            path=DATASETS_DIR + 'ml-100k/ml-100k/u.data',
-            reader_params=dict(line_format='user item rating timestamp',
-                               rating_scale=(1, 5),
-                               sep='\t')
-        ),
-    'ml-1m':
-        BuiltinDataset(
-            url='http://files.grouplens.org/datasets/movielens/ml-1m.zip',
-            path=DATASETS_DIR + 'ml-1m/ml-1m/ratings.dat',
-            reader_params=dict(line_format='user item rating timestamp',
-                               rating_scale=(1, 5),
-                               sep='::')
-        ),
-    'jester':
-        BuiltinDataset(
-            url='http://eigentaste.berkeley.edu/dataset/jester_dataset_2.zip',
-            path=DATASETS_DIR + 'jester/jester_ratings.dat',
-            reader_params=dict(line_format='user item rating',
-                               rating_scale=(-10, 10))
-        )
-}
+from .reader import Reader
+from .builtin_datasets import download_builtin_dataset
+from .builtin_datasets import BUILTIN_DATASETS
+from .trainset import Trainset
 
 
 class Dataset:
@@ -101,7 +61,7 @@ class Dataset:
         If the dataset has not already been loaded, it will be downloaded and
         saved. You will have to split your dataset using the :meth:`split
         <DatasetAutoFolds.split>` method. See an example in the :ref:`User
-        Guide <load_builtin_example>`.
+        Guide <cross_validate_example>`.
 
         Args:
             name(:obj:`string`): The name of the built-in dataset to load.
@@ -137,18 +97,7 @@ class Dataset:
                     print("Ok then, I'm out!")
                     sys.exit()
 
-            if not os.path.exists(DATASETS_DIR):
-                os.makedirs(DATASETS_DIR)
-
-            print('Trying to download dataset from ' + dataset.url + '...')
-            urlretrieve(dataset.url, DATASETS_DIR + 'tmp.zip')
-
-            with zipfile.ZipFile(DATASETS_DIR + 'tmp.zip', 'r') as tmp_zip:
-                tmp_zip.extractall(DATASETS_DIR + name)
-
-            os.remove(DATASETS_DIR + 'tmp.zip')
-            print('Done! Dataset', name, 'has been saved to', DATASETS_DIR +
-                  name)
+            download_builtin_dataset(name)
 
         reader = Reader(**dataset.reader_params)
 
@@ -166,7 +115,8 @@ class Dataset:
 
         Args:
             file_path(:obj:`string`): The path to the file containing ratings.
-            reader(:obj:`Reader`): A reader to read the file.
+            reader(:obj:`Reader <surprise.reader.Reader>`): A reader to read
+                the file.
         """
 
         return DatasetAutoFolds(ratings_file=file_path, reader=reader)
@@ -189,7 +139,8 @@ class Dataset:
             folds_files(:obj:`iterable` of :obj:`tuples`): The list of the
                 folds. A fold is a tuple of the form ``(path_to_train_file,
                 path_to_test_file)``.
-            reader(:obj:`Reader`): A reader to read the files.
+            reader(:obj:`Reader <surprise.reader.Reader>`): A reader to read
+                the files.
 
         """
 
@@ -207,8 +158,9 @@ class Dataset:
             df(`Dataframe`): The dataframe containing the ratings. It must have
                 three columns, corresponding to the user (raw) ids, the item
                 (raw) ids, and the ratings, in this order.
-            reader(:obj:`Reader`): A reader to read the file. Only the
-                ``rating_scale`` field needs to be specified.
+            reader(:obj:`Reader <surprise.reader.Reader>`): A reader to read
+                the file. Only the ``rating_scale`` field needs to be
+                specified.
         """
 
         return DatasetAutoFolds(reader=reader, df=df)
@@ -223,13 +175,22 @@ class Dataset:
         return raw_ratings
 
     def folds(self):
-        """Generator function to iterate over the folds of the Dataset.
+        """
+        Generator function to iterate over the folds of the Dataset.
 
-        See :ref:`User Guide <iterate_over_folds>` for usage.
+        .. warning::
+            Deprecated since version 1.05. Use :ref:`cross-validation iterators
+            <use_cross_validation_iterators>` instead. This method will be
+            removed in later versions.
 
         Yields:
-            tuple: :class:`Trainset` and testset of current fold.
+            tuple: :class:`Trainset <surprise.Trainset>` and testset
+            of current fold.
         """
+
+        warnings.warn('Using data.split() or using load_from_folds() '
+                      'without using a CV iterator is now deprecated. ',
+                      UserWarning)
 
         for raw_trainset, raw_testset in self.raw_folds():
             trainset = self.construct_trainset(raw_trainset)
@@ -338,7 +299,7 @@ class DatasetAutoFolds(Dataset):
         <train_on_whole_trainset>`.
 
         Returns:
-            The :class:`Trainset`.
+            The :class:`Trainset <surprise.Trainset>`.
         """
 
         return self.construct_trainset(self.raw_ratings)
@@ -362,10 +323,16 @@ class DatasetAutoFolds(Dataset):
         return k_folds(self.raw_ratings, self.n_folds)
 
     def split(self, n_folds=5, shuffle=True):
-        """Split the dataset into folds for future cross-validation.
+        """
+        Split the dataset into folds for future cross-validation.
+
+        .. warning::
+            Deprecated since version 1.05. Use :ref:`cross-validation iterators
+            <use_cross_validation_iterators>` instead. This method will be
+            removed in later versions.
 
         If you forget to call :meth:`split`, the dataset will be automatically
-        shuffled and split for 5-folds cross-validation.
+        shuffled and split for 5-fold cross-validation.
 
         You can obtain repeatable splits over your all your experiments by
         seeding the RNG: ::
@@ -389,6 +356,7 @@ class DatasetAutoFolds(Dataset):
 
         self.n_folds = n_folds
         self.has_been_split = True
+<<<<<<< HEAD
 
 
 class Reader():
@@ -746,3 +714,5 @@ class Trainset:
                                          self.all_ratings()])
 
         return self._global_mean
+=======
+>>>>>>> upstream/master

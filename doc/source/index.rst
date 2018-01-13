@@ -41,8 +41,11 @@ to contribute and send pull requests (see `GitHub page
    :hidden:
 
    prediction_algorithms_package
+   model_selection
    similarities
    accuracy
    dataset
+   trainset
+   reader
    evaluate
    dump

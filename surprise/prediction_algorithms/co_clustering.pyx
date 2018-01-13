@@ -9,6 +9,7 @@ cimport numpy as np  # noqa
 import numpy as np
 
 from .algo_base import AlgoBase
+from ..utils import get_rng
 
 
 class CoClustering(AlgoBase):
@@ -41,12 +42,20 @@ class CoClustering(AlgoBase):
        n_cltr_i(int): Number of item clusters. Default is ``3``.
        n_epochs(int): Number of iteration of the optimization loop. Default is
            ``20``.
+       random_state(int, RandomState instance from numpy, or ``None``):
+           Determines the RNG that will be used for initialization. If
+           int, ``random_state`` will be used as a seed for a new RNG. This is
+           useful to get the same initialization over multiple calls to
+           ``fit()``.  If RandomState instance, this same instance is used as
+           RNG. If ``None``, the current RNG from numpy is used.  Default is
+           ``None``.
        verbose(bool): If True, the current epoch will be printed. Default is
            ``False``.
 
     """
 
-    def __init__(self, n_cltr_u=3, n_cltr_i=3, n_epochs=20, verbose=False):
+    def __init__(self, n_cltr_u=3, n_cltr_i=3, n_epochs=20, random_state=None,
+                 verbose=False):
 
         AlgoBase.__init__(self)
 
@@ -54,13 +63,14 @@ class CoClustering(AlgoBase):
         self.n_cltr_i = n_cltr_i
         self.n_epochs = n_epochs
         self.verbose=verbose
+        self.random_state = random_state
 
-    def train(self, trainset):
+    def fit(self, trainset):
 
         # All this implementation was hugely inspired from MyMediaLite:
         # https://github.com/zenogantner/MyMediaLite/blob/master/src/MyMediaLite/RatingPrediction/CoClustering.cs
 
-        AlgoBase.train(self, trainset)
+        AlgoBase.fit(self, trainset)
 
         # User and item means
         cdef np.ndarray[np.double_t] user_mean
@@ -80,8 +90,9 @@ class CoClustering(AlgoBase):
         cdef double est
 
         # Randomly assign users and items to intial clusters
-        cltr_u = np.random.randint(self.n_cltr_u, size=trainset.n_users)
-        cltr_i = np.random.randint(self.n_cltr_i, size=trainset.n_items)
+        rng = get_rng(self.random_state)
+        cltr_u = rng.randint(self.n_cltr_u, size=trainset.n_users)
+        cltr_i = rng.randint(self.n_cltr_i, size=trainset.n_items)
 
         # Compute user and item means
         user_mean = np.zeros(self.trainset.n_users, np.double)
@@ -140,6 +151,8 @@ class CoClustering(AlgoBase):
         self.avg_cltr_u = avg_cltr_u
         self.avg_cltr_i = avg_cltr_i
         self.avg_cocltr = avg_cocltr
+
+        return self
 
     def compute_averages(self, np.ndarray[np.int_t] cltr_u,
                          np.ndarray[np.int_t] cltr_i):

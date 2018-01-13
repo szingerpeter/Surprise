@@ -9,6 +9,7 @@ from __future__ import (absolute_import, division, print_function,
 from surprise import Dataset
 from surprise import SVD
 from surprise import accuracy
+from surprise.model_selection import KFold
 
 
 data = Dataset.load_builtin('ml-100k')
@@ -16,7 +17,7 @@ data = Dataset.load_builtin('ml-100k')
 algo = SVD()
 
 trainset = data.build_full_trainset()
-algo.train(trainset)
+algo.fit(trainset)
 
 testset = trainset.build_testset()
 predictions = algo.test(testset)
@@ -26,10 +27,10 @@ accuracy.rmse(predictions, verbose=True)  # ~ 0.68 (which is low)
 # We can also do this during a cross-validation procedure!
 print('CV procedure:')
 
-data.split(3)
-for i, (trainset_cv, testset_cv) in enumerate(data.folds()):
+kf = KFold(n_splits=3)
+for i, (trainset_cv, testset_cv) in enumerate(kf.split(data)):
     print('fold number', i + 1)
-    algo.train(trainset_cv)
+    algo.fit(trainset_cv)
 
     print('On testset,', end='  ')
     predictions = algo.test(testset_cv)

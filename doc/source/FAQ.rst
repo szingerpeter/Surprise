@@ -123,18 +123,20 @@ some other will use/return an inner id.
 
 Raw ids are ids as defined in a rating file or in a pandas dataframe. They can
 be strings or numbers. Note though that if the ratings were read from a file
-which is the standard scenario, they are represented as strings (see e.g.
-:ref:`here <train_on_whole_trainset>`).
+which is the standard scenario, they are represented as strings. **This is
+important to know if you're using e.g.** :meth:`predict()
+<surprise.prediction_algorithms.algo_base.AlgoBase.predict>` **or other methods
+that accept raw ids as parameters.**
 
-On trainset creation, each raw id is mapped to a unique
-integer called inner id, which is a lot more suitable for `Surprise
+On trainset creation, each raw id is mapped to a unique integer called inner
+id, which is a lot more suitable for `Surprise
 <https://nicolashug.github.io/Surprise/>`_ to manipulate. Conversions between
 raw and inner ids can be done using the :meth:`to_inner_uid()
-<surprise.dataset.Trainset.to_inner_uid>`, :meth:`to_inner_iid()
-<surprise.dataset.Trainset.to_inner_iid>`, :meth:`to_raw_uid()
-<surprise.dataset.Trainset.to_raw_uid>`, and :meth:`to_raw_iid()
-<surprise.dataset.Trainset.to_raw_iid>` methods of the :class:`trainset
-<surprise.dataset.Trainset>`.
+<surprise.Trainset.to_inner_uid>`, :meth:`to_inner_iid()
+<surprise.Trainset.to_inner_iid>`, :meth:`to_raw_uid()
+<surprise.Trainset.to_raw_uid>`, and :meth:`to_raw_iid()
+<surprise.Trainset.to_raw_iid>` methods of the :class:`trainset
+<surprise.Trainset>`.
 
 
 Can I use my own dataset with Surprise, and can it be a pandas dataframe
@@ -145,8 +147,8 @@ Yes, and yes. See the :ref:`user guide <load_custom>`.
 How to tune an algorithm parameters
 -----------------------------------
 
-You can tune the parameters of an algorithm with the :class:`GridSearch
-<surprise.evaluate.GridSearch>` class as described :ref:`here
+You can tune the parameters of an algorithm with the :class:`GridSearchCV
+<surprise.model_selection.search.GridSearchCV>` class as described :ref:`here
 <tuning_algorithm_parameters>`. After the tuning, you may want to have an
 :ref:`unbiased estimate of your algorithm performances
 <unbiased_estimate_after_tuning>`.
@@ -155,15 +157,15 @@ How to get accuracy measures on the training set
 ------------------------------------------------
 
 You can use the :meth:`build_testset()
-<surprise.dataset.Trainset.build_testset()>` method of the :class:`Trainset
-<surprise.dataset.Trainset>` object to build a testset that can be then used
+<surprise.Trainset.build_testset()>` method of the :class:`Trainset
+<surprise.Trainset>` object to build a testset that can be then used
 with the :meth:`test()
 <surprise.prediction_algorithms.algo_base.AlgoBase.test>` method:
 
 .. literalinclude:: ../../examples/evaluate_on_trainset.py
     :caption: From file ``examples/evaluate_on_trainset.py``
     :name: evaluate_on_trainset.py
-    :lines: 9-24
+    :lines: 9-25
 
 Check out the example file for more usage examples.
 
@@ -199,3 +201,13 @@ seed of the RNG at the beginning of your program:
     my_seed = 0
     random.seed(my_seed)
     numpy.random.seed(my_seed)
+
+.. _data_folder:
+
+Where are datasets stored and how to change it?
+-----------------------------------------------
+
+By default, datasets downloaded by Surprise will be saved in the
+``'~/.surprise_data'`` directory. This is also where dump files will be stored.
+You can change the default directory by setting the ``'SURPRISE_DATA_FOLDER'``
+environment variable.

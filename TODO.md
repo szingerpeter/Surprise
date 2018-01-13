@@ -1,20 +1,36 @@
 TODO
 ====
 
-* Allow to change data folder from env variable like scikit learn
-* Allow to discount similarities (see aggarwal)
+
+* make some filtering dataset tools, like remove users/items with less/more
+  than n ratings, binarize a dataset, etc...
+* then implement MFBPR and see how it goes
 * Allow incremental updates for some algorithms
-* Profile code (mostly cython) to see what could be optimized
-
-Maybe, Maybe not
-----------------
-
-* allow a back up algorithm  when prediction is impossible. Right now it's just
-  the mean rating that is predicted. Maybe user would want to choose it.
 
 Done:
 -----
 
+* Grid search now has the refit param.
+* Grid search and cross_validate now allow return_train_score
+* Make all fit methods return self. Update docs on building custom algorithms
+* Update doc of MF algo to indicate how to retrieve latent factors.
+* all algorithms using random initialization now have a random_state parameter.
+* CV iterators:
+  - Write basic CV iterators
+  - evaluate -> rewrite to use CV iterators. Rename it into cross_validate.
+  - Same for GridSearch. Keep it in a model_selection module like scikit-learn
+    so that we can keep the old deprecated version. 
+  - Make cross validation parallel with joblib
+  - Add deprecation warnings for evaluate and GridSearch()
+  - handle the cv_results attribute for grid search
+  - (re)write all verbose settings for gridsearch and cross_validate
+  - Change examples so they use CV iterators and the new gridsearch and
+    cross_validate
+  - indicate in docs that split(), folds(), evaluate() and gridsearch() are
+    deprecated
+  - Write comments, docstring and update all docs
+  - Update main and command-line usage doc in getting started.rst
+* Allow to change data folder from env variable
 * Complete FAQ
 * Change the dumping machinery to be more consistent 
 * Allow to test on the trainset

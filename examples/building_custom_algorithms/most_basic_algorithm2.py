@@ -10,7 +10,7 @@ import numpy as np
 
 from surprise import AlgoBase
 from surprise import Dataset
-from surprise import evaluate
+from surprise.model_selection import cross_validate
 
 
 class MyOwnAlgorithm(AlgoBase):
@@ -20,15 +20,17 @@ class MyOwnAlgorithm(AlgoBase):
         # Always call base method before doing anything.
         AlgoBase.__init__(self)
 
-    def train(self, trainset):
+    def fit(self, trainset):
 
         # Here again: call base method before doing anything.
-        AlgoBase.train(self, trainset)
+        AlgoBase.fit(self, trainset)
 
         # Compute the average rating. We might as well use the
         # trainset.global_mean attribute ;)
         self.the_mean = np.mean([r for (_, _, r) in
                                  self.trainset.all_ratings()])
+
+        return self
 
     def estimate(self, u, i):
 
@@ -38,4 +40,4 @@ class MyOwnAlgorithm(AlgoBase):
 data = Dataset.load_builtin('ml-100k')
 algo = MyOwnAlgorithm()
 
-evaluate(algo, data)
+cross_validate(algo, data, verbose=True)

@@ -12,6 +12,7 @@ from six.moves import range
 
 from .algo_base import AlgoBase
 from .predictions import PredictionImpossible
+from ..utils import get_rng
 
 
 class SVD(AlgoBase):
@@ -105,13 +106,40 @@ class SVD(AlgoBase):
             over ``reg_all`` if set. Default is ``None``.
         reg_qi: The regularization term for :math:`q_i`. Takes precedence
             over ``reg_all`` if set. Default is ``None``.
+        random_state(int, RandomState instance from numpy, or ``None``):
+            Determines the RNG that will be used for initialization. If
+            int, ``random_state`` will be used as a seed for a new RNG. This is
+            useful to get the same initialization over multiple calls to
+            ``fit()``.  If RandomState instance, this same instance is used as
+            RNG. If ``None``, the current RNG from numpy is used.  Default is
+            ``None``.
         verbose: If ``True``, prints the current epoch. Default is ``False``.
+<<<<<<< HEAD
         amau(bool): Whether to treat missing values as unkown (``True``) or negative (``False``)
         missing_val: If AMAN, what value to assign to missing values
         downweight: How much downweight the negatively treated missing values
     """
 
     def __init__(self, n_factors=100, n_epochs=20, biased=True, mean_centered=True, init_mean=0, init_std_dev=.1, lr_all=.005, reg_all=.02, lr_bu=None, lr_bi=None, lr_pu=None, lr_qi=None, reg_bu=None, reg_bi=None, reg_pu=None, reg_qi=None, verbose=False, amau=True, missing_val=0, downweight=.001):
+=======
+
+    Attributes:
+        pu(numpy array of size (n_users, n_factors)): The user factors (only
+            exists if ``fit()`` has been called)
+        qi(numpy array of size (n_items, n_factors)): The item factors (only
+            exists if ``fit()`` has been called)
+        bu(numpy array of size (n_users)): The user biases (only
+            exists if ``fit()`` has been called)
+        bi(numpy array of size (n_items)): The item biases (only
+            exists if ``fit()`` has been called)
+    """
+
+    def __init__(self, n_factors=100, n_epochs=20, biased=True, init_mean=0,
+                 init_std_dev=.1, lr_all=.005,
+                 reg_all=.02, lr_bu=None, lr_bi=None, lr_pu=None, lr_qi=None,
+                 reg_bu=None, reg_bi=None, reg_pu=None, reg_qi=None,
+                 random_state=None, verbose=False):
+>>>>>>> upstream/master
 
         self.n_factors = n_factors
         self.n_epochs = n_epochs
@@ -127,6 +155,7 @@ class SVD(AlgoBase):
         self.reg_bi = reg_bi if reg_bi is not None else reg_all
         self.reg_pu = reg_pu if reg_pu is not None else reg_all
         self.reg_qi = reg_qi if reg_qi is not None else reg_all
+        self.random_state = random_state
         self.verbose = verbose
         self.amau = amau
         self.missing_val = missing_val
@@ -134,10 +163,12 @@ class SVD(AlgoBase):
 
         AlgoBase.__init__(self)
 
-    def train(self, trainset):
+    def fit(self, trainset):
 
-        AlgoBase.train(self, trainset)
+        AlgoBase.fit(self, trainset)
         self.sgd(trainset)
+
+        return self
 
     def sgd(self, trainset):
 
@@ -185,15 +216,31 @@ class SVD(AlgoBase):
         cdef int u, i
         cdef double r
         cdef double global_mean = self.trainset.global_mean
+<<<<<<< HEAD
         cdef double missing_val = self.missing_val
         cdef double downweight_rating
 		
+=======
+
+        cdef double lr_bu = self.lr_bu
+        cdef double lr_bi = self.lr_bi
+        cdef double lr_pu = self.lr_pu
+        cdef double lr_qi = self.lr_qi
+
+        cdef double reg_bu = self.reg_bu
+        cdef double reg_bi = self.reg_bi
+        cdef double reg_pu = self.reg_pu
+        cdef double reg_qi = self.reg_qi
+
+        rng = get_rng(self.random_state)
+
+>>>>>>> upstream/master
         bu = np.zeros(trainset.n_users, np.double)
         bi = np.zeros(trainset.n_items, np.double)
-        pu = np.random.normal(self.init_mean, self.init_std_dev,
-                              (trainset.n_users, self.n_factors))
-        qi = np.random.normal(self.init_mean, self.init_std_dev,
-                              (trainset.n_items, self.n_factors))
+        pu = rng.normal(self.init_mean, self.init_std_dev,
+                        (trainset.n_users, self.n_factors))
+        qi = rng.normal(self.init_mean, self.init_std_dev,
+                        (trainset.n_items, self.n_factors))
 
         
         if not self.mean_centered:
@@ -364,13 +411,41 @@ class SVDpp(AlgoBase):
             over ``reg_all`` if set. Default is ``None``.
         reg_yj: The regularization term for :math:`y_j`. Takes precedence
             over ``reg_all`` if set. Default is ``None``.
+        random_state(int, RandomState instance from numpy, or ``None``):
+            Determines the RNG that will be used for initialization. If
+            int, ``random_state`` will be used as a seed for a new RNG. This is
+            useful to get the same initialization over multiple calls to
+            ``fit()``.  If RandomState instance, this same instance is used as
+            RNG. If ``None``, the current RNG from numpy is used.  Default is
+            ``None``.
         verbose: If ``True``, prints the current epoch. Default is ``False``.
+<<<<<<< HEAD
         amau(bool): Whether to treat missing values as unkown (``True``) or negative (``False``)
         missing_val: If AMAN, what value to assign to missing values
         downweight: How much downweight the negatively treated missing values
     """
 
     def __init__(self, n_factors=20, n_epochs=20, biased=True, mean_centered=True, init_mean=0, init_std_dev=.1, lr_all=.007, reg_all=.02, lr_bu=None, lr_bi=None, lr_pu=None, lr_qi=None, lr_yj=None, reg_bu=None, reg_bi=None, reg_pu=None, reg_qi=None, reg_yj=None, verbose=False, amau=True, missing_val=0, downweight=.001):
+=======
+
+    Attributes:
+        pu(numpy array of size (n_users, n_factors)): The user factors (only
+            exists if ``fit()`` has been called)
+        qi(numpy array of size (n_items, n_factors)): The item factors (only
+            exists if ``fit()`` has been called)
+        yj(numpy array of size (n_items, n_factors)): The (implicit) item
+            factors (only exists if ``fit()`` has been called)
+        bu(numpy array of size (n_users)): The user biases (only
+            exists if ``fit()`` has been called)
+        bi(numpy array of size (n_items)): The item biases (only
+            exists if ``fit()`` has been called)
+    """
+
+    def __init__(self, n_factors=20, n_epochs=20, init_mean=0, init_std_dev=.1,
+                 lr_all=.007, reg_all=.02, lr_bu=None, lr_bi=None, lr_pu=None,
+                 lr_qi=None, lr_yj=None, reg_bu=None, reg_bi=None, reg_pu=None,
+                 reg_qi=None, reg_yj=None, random_state=None, verbose=False):
+>>>>>>> upstream/master
 
         self.n_factors = n_factors
         self.n_epochs = n_epochs
@@ -388,6 +463,7 @@ class SVDpp(AlgoBase):
         self.reg_pu = reg_pu if reg_pu is not None else reg_all
         self.reg_qi = reg_qi if reg_qi is not None else reg_all
         self.reg_yj = reg_yj if reg_yj is not None else reg_all
+        self.random_state = random_state
         self.verbose = verbose
         self.amau = amau
         self.missing_val = missing_val
@@ -395,10 +471,12 @@ class SVDpp(AlgoBase):
 
         AlgoBase.__init__(self)
 
-    def train(self, trainset):
+    def fit(self, trainset):
 
-        AlgoBase.train(self, trainset)
+        AlgoBase.fit(self, trainset)
         self.sgd(trainset)
+
+        return self
 
     def sgd(self, trainset):
 
@@ -423,6 +501,7 @@ class SVDpp(AlgoBase):
         bu = np.zeros(trainset.n_users, np.double)
         bi = np.zeros(trainset.n_items, np.double)
 
+<<<<<<< HEAD
         pu = np.random.normal(self.init_mean, self.init_std_dev,
                               (trainset.n_users, self.n_factors))
         qi = np.random.normal(self.init_mean, self.init_std_dev,
@@ -432,6 +511,17 @@ class SVDpp(AlgoBase):
 							  
         if not self.mean_centered:
             global_mean = 0
+=======
+        rng = get_rng(self.random_state)
+
+        pu = rng.normal(self.init_mean, self.init_std_dev,
+                        (trainset.n_users, self.n_factors))
+        qi = rng.normal(self.init_mean, self.init_std_dev,
+                        (trainset.n_items, self.n_factors))
+        yj = rng.normal(self.init_mean, self.init_std_dev,
+                        (trainset.n_items, self.n_factors))
+        u_impl_fdb = np.zeros(self.n_factors, np.double)
+>>>>>>> upstream/master
 
         for current_epoch in range(self.n_epochs):
             if self.verbose:
@@ -625,10 +715,33 @@ class NMF(AlgoBase):
             ``0``.
         init_high: Higher bound for random initialization of factors. Default
             is ``1``.
+        random_state(int, RandomState instance from numpy, or ``None``):
+            Determines the RNG that will be used for initialization. If
+            int, ``random_state`` will be used as a seed for a new RNG. This is
+            useful to get the same initialization over multiple calls to
+            ``fit()``.  If RandomState instance, this same instance is used as
+            RNG. If ``None``, the current RNG from numpy is used.  Default is
+            ``None``.
         verbose: If ``True``, prints the current epoch. Default is ``False``.
+
+    Attributes:
+        pu(numpy array of size (n_users, n_factors)): The user factors (only
+            exists if ``fit()`` has been called)
+        qi(numpy array of size (n_items, n_factors)): The item factors (only
+            exists if ``fit()`` has been called)
+        bu(numpy array of size (n_users)): The user biases (only
+            exists if ``fit()`` has been called)
+        bi(numpy array of size (n_items)): The item biases (only
+            exists if ``fit()`` has been called)
     """
 
+<<<<<<< HEAD
     def __init__(self, n_factors=15, n_epochs=50, biased=False, mean_centered=True, reg_pu=.06, reg_qi=.06, reg_bu=.02, reg_bi=.02, lr_bu=.005, lr_bi=.005, init_low=0, init_high=1, verbose=False, amau=True, missing_val=0, downweight=.001):
+=======
+    def __init__(self, n_factors=15, n_epochs=50, biased=False, reg_pu=.06,
+                 reg_qi=.06, reg_bu=.02, reg_bi=.02, lr_bu=.005, lr_bi=.005,
+                 init_low=0, init_high=1, random_state=None, verbose=False):
+>>>>>>> upstream/master
 
         self.n_factors = n_factors
         self.n_epochs = n_epochs
@@ -642,6 +755,7 @@ class NMF(AlgoBase):
         self.reg_bi = reg_bi
         self.init_low = init_low
         self.init_high = init_high
+        self.random_state = random_state
         self.verbose = verbose
         self.amau = amau
         self.missing_val = missing_val
@@ -652,10 +766,12 @@ class NMF(AlgoBase):
 
         AlgoBase.__init__(self)
 
-    def train(self, trainset):
+    def fit(self, trainset):
 
-        AlgoBase.train(self, trainset)
+        AlgoBase.fit(self, trainset)
         self.sgd(trainset)
+
+        return self
 
     def sgd(self, trainset):
 
@@ -682,10 +798,11 @@ class NMF(AlgoBase):
         cdef double downweight_rating
 		
         # Randomly initialize user and item factors
-        pu = np.random.uniform(self.init_low, self.init_high,
-                               size=(trainset.n_users, self.n_factors))
-        qi = np.random.uniform(self.init_low, self.init_high,
-                               size=(trainset.n_items, self.n_factors))
+        rng = get_rng(self.random_state)
+        pu = rng.uniform(self.init_low, self.init_high,
+                         size=(trainset.n_users, self.n_factors))
+        qi = rng.uniform(self.init_low, self.init_high,
+                         size=(trainset.n_items, self.n_factors))
 
         bu = np.zeros(trainset.n_users, np.double)
         bi = np.zeros(trainset.n_items, np.double)
