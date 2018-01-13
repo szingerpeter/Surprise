@@ -259,6 +259,24 @@ class KNNBaseline(SymmetricAlgo):
 
     The prediction :math:`\\hat{r}_{ui}` is set as:
 
+
+    .. math::
+        \hat{r}_{ui} = b_{ui} + \\frac{ \\sum\\limits_{v \in N^k_i(u)}
+        (r_{vi} - b_{vi})} {|N^k_i(u)|}
+
+    or
+
+
+    .. math::
+        \hat{r}_{ui} = b_{ui} + \\frac{ \\sum\\limits_{j \in N^k_u(i)}
+        (r_{uj} - b_{uj})} {|N^k_u(j)|}
+
+    depending on the ``user_based`` field of the ``sim_options`` parameter. For
+    the best predictions, use the :func:`pearson_baseline
+    <surprise.similarities.pearson_baseline>` similarity measure.
+
+    When ``sim_weighting`` is ``True``:
+
     .. math::
         \hat{r}_{ui} = b_{ui} + \\frac{ \\sum\\limits_{v \in N^k_i(u)}
         \\text{sim}(u, v) \cdot (r_{vi} - b_{vi})} {\\sum\\limits_{v \in
@@ -271,10 +289,6 @@ class KNNBaseline(SymmetricAlgo):
         \hat{r}_{ui} = b_{ui} + \\frac{ \\sum\\limits_{j \in N^k_u(i)}
         \\text{sim}(i, j) \cdot (r_{uj} - b_{uj})} {\\sum\\limits_{j \in
         N^k_u(j)} \\text{sim}(i, j)}
-
-    depending on the ``user_based`` field of the ``sim_options`` parameter. For
-    the best predictions, use the :func:`pearson_baseline
-    <surprise.similarities.pearson_baseline>` similarity measure.
 
     This algorithm corresponds to formula (3), section 2.2 of
     :cite:`Koren:2010`.
@@ -369,6 +383,20 @@ class KNNWithZScore(SymmetricAlgo):
 
     .. math::
         \hat{r}_{ui} = \mu_u + \sigma_u \\frac{ \\sum\\limits_{v \in N^k_i(u)}
+        (r_{vi} - \mu_v) / \sigma_v} {|N^k_i(u)|}
+
+    or
+
+    .. math::
+        \hat{r}_{ui} = \mu_i + \sigma_i \\frac{ \\sum\\limits_{j \in N^k_u(i)}
+        (r_{uj} - \mu_j) / \sigma_j} {|N^k_u(i)}|}
+
+    depending on the ``user_based`` field of the ``sim_options`` parameter.
+
+    When ``sim_weighting`` is ``True``:
+
+    .. math::
+        \hat{r}_{ui} = \mu_u + \sigma_u \\frac{ \\sum\\limits_{v \in N^k_i(u)}
         \\text{sim}(u, v) \cdot (r_{vi} - \mu_v) / \sigma_v} {\\sum\\limits_{v
         \in N^k_i(u)} \\text{sim}(u, v)}
 
@@ -378,8 +406,6 @@ class KNNWithZScore(SymmetricAlgo):
         \hat{r}_{ui} = \mu_i + \sigma_i \\frac{ \\sum\\limits_{j \in N^k_u(i)}
         \\text{sim}(i, j) \cdot (r_{uj} - \mu_j) / \sigma_j} {\\sum\\limits_{j
         \in N^k_u(i)} \\text{sim}(i, j)}
-
-    depending on the ``user_based`` field of the ``sim_options`` parameter.
 
     If :math:`\sigma` is 0, than the overall sigma is used in that case.
 
