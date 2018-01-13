@@ -59,6 +59,22 @@ class KNNBasic(SymmetricAlgo):
 
     .. math::
         \hat{r}_{ui} = \\frac{
+        \\sum\\limits_{v \in N^k_i(u)} r_{vi}}
+        {|N^k_i(u)|}
+
+    or
+
+    .. math::
+        \hat{r}_{ui} = \\frac{
+        \\sum\\limits_{j \in N^k_u(i)} r_{uj}}
+        {|N^k_u(j)|}
+
+    depending on the ``user_based`` field of the ``sim_options`` parameter.
+
+    When ``sim_weighting`` is ``True``:
+
+    .. math::
+        \hat{r}_{ui} = \\frac{
         \\sum\\limits_{v \in N^k_i(u)} \\text{sim}(u, v) \cdot r_{vi}}
         {\\sum\\limits_{v \in N^k_i(u)} \\text{sim}(u, v)}
 
@@ -68,8 +84,6 @@ class KNNBasic(SymmetricAlgo):
         \hat{r}_{ui} = \\frac{
         \\sum\\limits_{j \in N^k_u(i)} \\text{sim}(i, j) \cdot r_{uj}}
         {\\sum\\limits_{j \in N^k_u(j)} \\text{sim}(i, j)}
-
-    depending on the ``user_based`` field of the ``sim_options`` parameter.
 
     Args:
         k(int): The (max) number of neighbors to take into account for
@@ -81,13 +95,16 @@ class KNNBasic(SymmetricAlgo):
         sim_options(dict): A dictionary of options for the similarity
             measure. See :ref:`similarity_measures_configuration` for accepted
             options.
+        sim_weighting(bool): Whether to weight neighbour contributions with 
+            similarities for calculating predictions or not. Default is ``False``.
     """
 
-    def __init__(self, k=40, min_k=1, sim_options={}, **kwargs):
+    def __init__(self, k=40, min_k=1, sim_weighting=False, sim_options={}, **kwargs):
 
         SymmetricAlgo.__init__(self, sim_options=sim_options, **kwargs)
         self.k = k
         self.min_k = min_k
+        self.sim_weighting = sim_weighting
 
     def fit(self, trainset):
 
@@ -106,18 +123,24 @@ class KNNBasic(SymmetricAlgo):
         neighbors = [(self.sim[x, x2], r) for (x2, r) in self.yr[y]]
         k_neighbors = heapq.nlargest(self.k, neighbors, key=lambda t: t[0])
 
-        # compute weighted average
+        # compute prediction
         sum_sim = sum_ratings = actual_k = 0
         for (sim, r) in k_neighbors:
             if sim > 0:
-                sum_sim += sim
-                sum_ratings += sim * r
+                if self.sim_weighting:
+                    sum_sim += sim
+                    sum_ratings += sim * r
+                else:
+                    sum_ratings += r
                 actual_k += 1
 
         if actual_k < self.min_k:
             raise PredictionImpossible('Not enough neighbors.')
-
-        est = sum_ratings / sum_sim
+        
+        if self.sim_weighting:
+            est = sum_ratings / sum_sim
+        else:
+            est = sum_ratings / actual_k
 
         details = {'actual_k': actual_k}
         return est, details
@@ -130,6 +153,20 @@ class KNNWithMeans(SymmetricAlgo):
     The prediction :math:`\\hat{r}_{ui}` is set as:
 
     .. math::
+        \hat{r}_{ui} = \mu_u + \\frac{\\sum\\limits_{v \in N^k_i(u)} 
+        (r_{vi} - \mu_v)} {|N^k_i(u)|}
+
+    or
+
+    .. math::
+        \hat{r}_{ui} = \mu_i + \\frac{\\sum\\limits_{v \in N^k_u(i)} 
+        (r_{uj} - \mu_j)} {|N^k_u(i)|}
+
+    depending on the ``user_based`` field of the ``sim_options`` parameter.
+    
+    When ``sim_weighting`` is ``True``:
+
+    .. math::
         \hat{r}_{ui} = \mu_u + \\frac{ \\sum\\limits_{v \in N^k_i(u)}
         \\text{sim}(u, v) \cdot (r_{vi} - \mu_v)} {\\sum\\limits_{v \in
         N^k_i(u)} \\text{sim}(u, v)}
@@ -140,8 +177,6 @@ class KNNWithMeans(SymmetricAlgo):
         \hat{r}_{ui} = \mu_i + \\frac{ \\sum\\limits_{j \in N^k_u(i)}
         \\text{sim}(i, j) \cdot (r_{uj} - \mu_j)} {\\sum\\limits_{j \in
         N^k_u(i)} \\text{sim}(i, j)}
-
-    depending on the ``user_based`` field of the ``sim_options`` parameter.
 
 
     Args:
@@ -156,14 +191,17 @@ class KNNWithMeans(SymmetricAlgo):
         sim_options(dict): A dictionary of options for the similarity
             measure. See :ref:`similarity_measures_configuration` for accepted
             options.
+        sim_weighting(bool): Whether to weight neighbour contributions with 
+            similarities for calculating predictions or not. Default is ``False``.
     """
 
-    def __init__(self, k=40, min_k=1, sim_options={}, **kwargs):
+    def __init__(self, k=40, min_k=1, sim_weighting=False, sim_options={}, **kwargs):
 
         SymmetricAlgo.__init__(self, sim_options=sim_options, **kwargs)
 
         self.k = k
         self.min_k = min_k
+        self.sim_weighting = sim_weighting
 
     def fit(self, trainset):
 
@@ -188,19 +226,25 @@ class KNNWithMeans(SymmetricAlgo):
 
         est = self.means[x]
 
-        # compute weighted average
+        # compute average
         sum_sim = sum_ratings = actual_k = 0
         for (nb, sim, r) in k_neighbors:
             if sim > 0:
-                sum_sim += sim
-                sum_ratings += sim * (r - self.means[nb])
+                if self.sim_weighting:
+                    sum_sim += sim
+                    sum_ratings += sim * (r - self.means[nb])
+                else:
+                    sum_ratings += (r - self.means[nb])
                 actual_k += 1
 
         if actual_k < self.min_k:
             sum_ratings = 0
 
         try:
-            est += sum_ratings / sum_sim
+            if self.sim_weighting:
+                est += sum_ratings / sum_sim
+            else:
+                est += sum_ratings / actual_k
         except ZeroDivisionError:
             pass  # return mean
 
@@ -251,16 +295,19 @@ class KNNBaseline(SymmetricAlgo):
         bsl_options(dict): A dictionary of options for the baseline estimates
             computation. See :ref:`baseline_estimates_configuration` for
             accepted options.
+        sim_weighting(bool): Whether to weight neighbour contributions with 
+            similarities for calculating predictions or not. Default is ``False``.
 
     """
 
-    def __init__(self, k=40, min_k=1, sim_options={}, bsl_options={}):
+    def __init__(self, k=40, min_k=1, sim_weighting=False, sim_options={}, bsl_options={}):
 
         SymmetricAlgo.__init__(self, sim_options=sim_options,
                                bsl_options=bsl_options)
 
         self.k = k
         self.min_k = min_k
+        self.sim_weighting = sim_weighting
 
     def fit(self, trainset):
 
@@ -287,20 +334,26 @@ class KNNBaseline(SymmetricAlgo):
         neighbors = [(x2, self.sim[x, x2], r) for (x2, r) in self.yr[y]]
         k_neighbors = heapq.nlargest(self.k, neighbors, key=lambda t: t[1])
 
-        # compute weighted average
+        # compute average
         sum_sim = sum_ratings = actual_k = 0
         for (nb, sim, r) in k_neighbors:
             if sim > 0:
-                sum_sim += sim
                 nb_bsl = self.trainset.global_mean + self.bx[nb] + self.by[y]
-                sum_ratings += sim * (r - nb_bsl)
+                if self.sim_weighting:
+                    sum_sim += sim
+                    sum_ratings += sim * (r - nb_bsl)
+                else:
+                    sum_ratings += (r - nb_bsl)
                 actual_k += 1
 
         if actual_k < self.min_k:
             sum_ratings = 0
 
         try:
-            est += sum_ratings / sum_sim
+            if self.sim_weighting:
+                est += sum_ratings / sum_sim
+            else:
+                est += sum_ratings / actual_k
         except ZeroDivisionError:
             pass  # just baseline again
 
@@ -342,14 +395,17 @@ class KNNWithZScore(SymmetricAlgo):
         sim_options(dict): A dictionary of options for the similarity
             measure. See :ref:`similarity_measures_configuration` for accepted
             options.
+        sim_weighting(bool): Whether to weight neighbour contributions with 
+            similarities for calculating predictions or not. Default is ``False``.
     """
 
-    def __init__(self, k=40, min_k=1, sim_options={}, **kwargs):
+    def __init__(self, k=40, min_k=1, sim_weighting=False, sim_options={}, **kwargs):
 
         SymmetricAlgo.__init__(self, sim_options=sim_options, **kwargs)
 
         self.k = k
         self.min_k = min_k
+        self.sim_weighting = sim_weighting
 
     def fit(self, trainset):
 
@@ -386,15 +442,21 @@ class KNNWithZScore(SymmetricAlgo):
         sum_sim = sum_ratings = actual_k = 0
         for (nb, sim, r) in k_neighbors:
             if sim > 0:
-                sum_sim += sim
-                sum_ratings += sim * (r - self.means[nb]) / self.sigmas[nb]
+                if self.sim_weighting:
+                    sum_sim += sim
+                    sum_ratings += sim * (r - self.means[nb]) / self.sigmas[nb]
+                else:
+                    sum_ratings += (r - self.means[nb]) / self.sigmas[nb]
                 actual_k += 1
 
         if actual_k < self.min_k:
             sum_ratings = 0
 
         try:
-            est += sum_ratings / sum_sim * self.sigmas[x]
+            if self.sim_weighting:
+                est += sum_ratings / sum_sim * self.sigmas[x]
+            else:
+                est += sum_ratings / actual_k * self.sigmas[x]
         except ZeroDivisionError:
             pass  # return mean
 
