@@ -253,14 +253,19 @@ class AlgoBase(object):
                              'pearson_baseline': sims.pearson_baseline,
                              'mad': sims.mad}
 
-        if self.sim_options['user_based']:
-            n_x, yr = self.trainset.n_users, self.trainset.ir
-        else:
-            n_x, yr = self.trainset.n_items, self.trainset.ur
-
         min_support = self.sim_options.get('min_support', 1)
         significance_weighting = self.sim_options.get('significance_weighting', False)
-        beta = self.sim_options.get('significance_beta', 50)        
+        beta = self.sim_options.get('significance_beta', 50)
+        var_weighting = self.sim_options.get('variance_weighting', False)
+
+        if self.sim_options['user_based']:
+            n_x, yr  = self.trainset.n_users, self.trainset.ir
+            if var_weighting:
+                var_weight_yr, var_weight_nx = self.trainset.ur, self.trainset.n_items
+        else:
+            n_x, yr = self.trainset.n_items, self.trainset.ur
+            if var_weighting:
+                var_weight_yr, var_weight_nx = self.trainset.ir, self.trainset.n_users       
 
         kwargs = {}
         kwargs.update({'n_x': n_x})
