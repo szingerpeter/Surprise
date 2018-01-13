@@ -81,7 +81,7 @@ class SVD(AlgoBase):
         n_epochs: The number of iteration of the SGD procedure. Default is
             ``20``.
         biased(bool): Whether to use biases. See :ref:`note
-            <unbiased_note>` above.  Default is ``True``.
+            <unbiased_note>` above.  Default is ``False``.
         init_mean: The mean of the normal distribution for factor vectors
             initialization. Default is ``0``.
         init_std_dev: The standard deviation of the normal distribution for
@@ -113,10 +113,13 @@ class SVD(AlgoBase):
             RNG. If ``None``, the current RNG from numpy is used.  Default is
             ``None``.
         verbose: If ``True``, prints the current epoch. Default is ``False``.
-        mean_centered(bool): Whether to mean center ratings. Default is ``True``.
-        amau(bool): Whether to treat missing values as unkown (``True``) or negative (``False``)
+        mean_centered(bool): Whether to mean center ratings. Default is ``False``.
+        amau(bool): Whether to treat missing values as unkown (``True``) or negative (``False``).
+            Default is ``True``.
         missing_val: If AMAN, what value to assign to missing values
+            Default is ``0``.
         downweight: How much downweight the negatively treated missing values
+            Default is ``0.001``.
         
 
     Attributes:
@@ -130,11 +133,11 @@ class SVD(AlgoBase):
             exists if ``fit()`` has been called)
     """
 
-    def __init__(self, n_factors=100, n_epochs=20, biased=True, init_mean=0,
+    def __init__(self, n_factors=100, n_epochs=20, biased=False, init_mean=0,
                  init_std_dev=.1, lr_all=.005,
                  reg_all=.02, lr_bu=None, lr_bi=None, lr_pu=None, lr_qi=None,
                  reg_bu=None, reg_bi=None, reg_pu=None, reg_qi=None,
-                 random_state=None, verbose=False, mean_centered=True, amau=True, missing_val=0, downweight=.001):
+                 random_state=None, verbose=False, mean_centered=False, amau=True, missing_val=0, downweight=.001):
 
         self.n_factors = n_factors
         self.n_epochs = n_epochs
@@ -373,8 +376,8 @@ class SVDpp(AlgoBase):
         n_factors: The number of factors. Default is ``20``.
         n_epochs: The number of iteration of the SGD procedure. Default is
             ``20``.
-		biased(bool): Whether to use biases. See :ref:`note
-            <unbiased_note>` above.  Default is ``True``.
+        biased(bool): Whether to use biases. See :ref:`note
+            <unbiased_note>` above.  Default is ``False``.
         init_mean: The mean of the normal distribution for factor vectors
             initialization. Default is ``0``.
         init_std_dev: The standard deviation of the normal distribution for
@@ -410,10 +413,13 @@ class SVDpp(AlgoBase):
             RNG. If ``None``, the current RNG from numpy is used.  Default is
             ``None``.
         verbose: If ``True``, prints the current epoch. Default is ``False``.
-        mean_centered(bool): Whether to mean center ratings. Default is ``True``.
-        amau(bool): Whether to treat missing values as unkown (``True``) or negative (``False``)
+        mean_centered(bool): Whether to mean center ratings. Default is ``False``.
+        amau(bool): Whether to treat missing values as unkown (``True``) or negative (``False``).
+            Default is ``True``.
         missing_val: If AMAN, what value to assign to missing values
+            Default is ``0``.
         downweight: How much downweight the negatively treated missing values
+            Default is ``0.001``.
 
 
     Attributes:
@@ -429,10 +435,10 @@ class SVDpp(AlgoBase):
             exists if ``fit()`` has been called)
     """
 
-    def __init__(self, n_factors=20, n_epochs=20, biased=True, init_mean=0, init_std_dev=.1,
+    def __init__(self, n_factors=20, n_epochs=20, biased=False, init_mean=0, init_std_dev=.1,
                  lr_all=.007, reg_all=.02, lr_bu=None, lr_bi=None, lr_pu=None,
                  lr_qi=None, lr_yj=None, reg_bu=None, reg_bi=None, reg_pu=None,
-                 reg_qi=None, reg_yj=None, random_state=None, verbose=False, mean_centered=True, amau=True, missing_val=0, downweight=.001):
+                 reg_qi=None, reg_yj=None, random_state=None, verbose=False, mean_centered=False, amau=True, missing_val=0, downweight=.001):
 
         self.n_factors = n_factors
         self.n_epochs = n_epochs
@@ -707,6 +713,13 @@ class NMF(AlgoBase):
             RNG. If ``None``, the current RNG from numpy is used.  Default is
             ``None``.
         verbose: If ``True``, prints the current epoch. Default is ``False``.
+        mean_centered(bool): Whether to mean center ratings. Default is ``False``.
+        amau(bool): Whether to treat missing values as unkown (``True``) or negative (``False``).
+            Default is ``True``.
+        missing_val: If AMAN, what value to assign to missing values
+            Default is ``0``.
+        downweight: How much downweight the negatively treated missing values
+            Default is ``0.001``.
 
     Attributes:
         pu(numpy array of size (n_users, n_factors)): The user factors (only
@@ -721,7 +734,7 @@ class NMF(AlgoBase):
 
     def __init__(self, n_factors=15, n_epochs=50, biased=False, reg_pu=.06,
                  reg_qi=.06, reg_bu=.02, reg_bi=.02, lr_bu=.005, lr_bi=.005,
-                 init_low=0, init_high=1, random_state=None, verbose=False, mean_centered=True, amau=True, missing_val=0, downweight=.001):
+                 init_low=0, init_high=1, random_state=None, verbose=False, mean_centered=False, amau=True, missing_val=0, downweight=.001):
 
         self.n_factors = n_factors
         self.n_epochs = n_epochs
