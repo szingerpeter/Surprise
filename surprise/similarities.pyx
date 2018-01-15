@@ -57,7 +57,7 @@ def variance_weights(n_x, yr):
 
 
 
-def cosine(n_x, yr, min_support, significance_weighting=False, significance_beta=50):
+def cosine(n_x, yr, n_y, min_support, significance_weighting=False, significance_beta=50):
     """Compute the cosine similarity between all pairs of users (or items).
 
     Only **common** users (or items) are taken into account. The cosine
@@ -129,7 +129,7 @@ def cosine(n_x, yr, min_support, significance_weighting=False, significance_beta
 
     return sim
 
-def mad(n_x, yr, min_support, significance_weighting=False, significance_beta=50, variance_weighting=False):
+def mad(n_x, yr, n_y, min_support, significance_weighting=False, significance_beta=50, variance_weighting=False, var_weight_yr=None, inverse_user_frequency=False):
     """Compute the Mean Absolute Difference similarity between all pairs of 
     users (or items).
 
@@ -178,9 +178,10 @@ def mad(n_x, yr, min_support, significance_weighting=False, significance_beta=50
     cdef int min_sprt = min_support
     cdef double beta = significance_beta
     cdef double minMax, diff, mad
+    cdef int ny = n_y
 
     if variance_weighting:
-        var_weights, minMax = variance_weights(variance_weighting_nx, variance_weighting_yr)
+        var_weights, minMax = variance_weights(n_y, var_weight_yr)
 
 
     abs_diff = np.zeros((n_x, n_x), np.double)
@@ -193,6 +194,8 @@ def mad(n_x, yr, min_support, significance_weighting=False, significance_beta=50
         for xi, ri in y_ratings:
             for xj, rj in y_ratings:
                 diff = np.abs(ri - rj)
+                if inverse_user_frequency:
+                    diff *= np.log(ny / len(y_ratings))
                 if variance_weighting:
                     abs_diff[xi, xj] += diff * var_weights[y]
                     sum_var_weights[y] += var_weights[y]
@@ -217,7 +220,7 @@ def mad(n_x, yr, min_support, significance_weighting=False, significance_beta=50
 
     return sim
 
-def msd(n_x, yr, min_support, significance_weighting=False, significance_beta=50, variance_weighting=False):
+def msd(n_x, yr, n_y, min_support, significance_weighting=False, significance_beta=50, variance_weighting=False, var_weight_yr=None, inverse_user_frequency=False):
     """Compute the Mean Squared Difference similarity between all pairs of
     users (or items).
 
@@ -266,19 +269,22 @@ def msd(n_x, yr, min_support, significance_weighting=False, significance_beta=50
     cdef int min_sprt = min_support
     cdef double beta = significance_beta
     cdef double minMax, diff, msd
+    cdef int ny = n_y
 
     sq_diff = np.zeros((n_x, n_x), np.double)
     freq = np.zeros((n_x, n_x), np.int)
     sim = np.zeros((n_x, n_x), np.double)
 
     if variance_weighting:
-        var_weights, minMax = variance_weights(variance_weighting_nx, variance_weighting_yr)
+        var_weights, minMax = variance_weights(n_y, var_weight_yr)
 
 
     for y, y_ratings in iteritems(yr):
         for xi, ri in y_ratings:
             for xj, rj in y_ratings:
                 diff = (ri - rj) ** 2
+                if inverse_user_frequency:
+                    diff *= np.log(ny / len(y_ratings))
                 if variance_weighting:
                     sq_diff[xi, xj] += diff * var_weights[y]
                     sum_var_weights[y] += var_weights[y]
@@ -305,7 +311,7 @@ def msd(n_x, yr, min_support, significance_weighting=False, significance_beta=50
     return sim
 
 
-def pearson(n_x, yr, min_support, significance_weighting=False, significance_beta=50):
+def pearson(n_x, yr, n_y, min_support, significance_weighting=False, significance_beta=50):
     """Compute the Pearson correlation coefficient between all pairs of users
     (or items).
 
@@ -398,7 +404,7 @@ def pearson(n_x, yr, min_support, significance_weighting=False, significance_bet
     return sim
 
 
-def pearson_baseline(n_x, yr, min_support, global_mean, x_biases, y_biases,
+def pearson_baseline(n_x, yr, n_y, min_support, global_mean, x_biases, y_biases,
                      shrinkage=100):
     """Compute the (shrunk) Pearson correlation coefficient between all pairs
     of users (or items) using baselines for centering instead of means.

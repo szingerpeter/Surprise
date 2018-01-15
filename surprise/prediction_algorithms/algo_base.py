@@ -257,23 +257,31 @@ class AlgoBase(object):
         significance_weighting = self.sim_options.get('significance_weighting', False)
         beta = self.sim_options.get('significance_beta', 50)
         var_weighting = self.sim_options.get('variance_weighting', False)
+        inverse_user_frequency = self.sim_options.get('inverse_user_frequency', False)
+
+        var_weight_yr = None
 
         if self.sim_options['user_based']:
-            n_x, yr  = self.trainset.n_users, self.trainset.ir
+            n_x, yr, n_y  = self.trainset.n_users, self.trainset.ir, self.trainset.n_items
             if var_weighting:
-                var_weight_yr, var_weight_nx = self.trainset.ur, self.trainset.n_items
+                var_weight_yr = self.trainset.ur
         else:
-            n_x, yr = self.trainset.n_items, self.trainset.ur
+            n_x, yr, n_y = self.trainset.n_items, self.trainset.ur, self.trainset.n_users
             if var_weighting:
-                var_weight_yr, var_weight_nx = self.trainset.ir, self.trainset.n_users       
+                var_weight_yr = self.trainset.ir      
 
         kwargs = {}
         kwargs.update({'n_x': n_x})
         kwargs.update({'yr': yr})
+        kwargs.update({'n_y': n_y})
         kwargs.update({'min_support': min_support})
         kwargs.update({'significance_weighting': significance_weighting})
         kwargs.update({'significance_beta': beta})
         kwargs.update({'variance_weighting': variance_weighting})
+        kwargs.update({'inverse_user_frequency': inverse_user_frequency})
+
+        if var_weighting:
+            kwargs.update({'var_weight_yr': var_weight_yr})
 
         name = self.sim_options.get('name', 'msd').lower()
         if name == 'pearson_baseline':
