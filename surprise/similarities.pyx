@@ -25,6 +25,37 @@ import numpy as np
 from six.moves import range
 from six import iteritems
 
+def variance_weights(n_x, yr):
+    """Calculating the variance for each object.
+
+    If the model is ```user_based```, we calculate the variance_weights for the items,
+    Otherwise we calculate them for the users.
+    
+    Only known ratings are taken into account. The variance for is defined as:
+    .. math::
+        \\text{var\\textsubscript{i}} = \\frac{\\limits_{i} (r_{u, i} - \mu_{u}) ^ 2}{n - 1}
+    
+    or
+
+    .. math::
+        \\text{var\\textsubscript{i}} = \\frac{\\limits_{i} (r_{i, v} - \mu_{v}) ^ 2}{n - 1}
+
+    The variance-weight is defined as:
+
+    .. math::
+        \\text{var\\texsubscript{i}} = \\text{var\\textsubscript{i}} - frac{\\text{var\\textsubscript{min}}}{\\text{var\\textsubscript{max}}}
+    """
+    cdef np.ndarray[np.double_t, ndim=1] var_weights
+    var_weights = np.zeros((n_x), np.double)
+
+    for y, y_ratings in iteritems(yr):
+        var_weights[y] = np.var(list(y_ratings.values()))
+
+    minMax = np.min(var_weights) / np.max(var_weights)
+
+    return var_weights, minMax
+
+
 
 def cosine(n_x, yr, min_support, significance_weighting=False, significance_beta=50):
     """Compute the cosine similarity between all pairs of users (or items).
@@ -98,7 +129,7 @@ def cosine(n_x, yr, min_support, significance_weighting=False, significance_beta
 
     return sim
 
-def mad(n_x, yr, min_support, significance_weighting=False, significance_beta=50):
+def mad(n_x, yr, min_support, significance_weighting=False, significance_beta=50, variance_weighting=False):
     """Compute the Mean Absolute Difference similarity between all pairs of 
     users (or items).
 
@@ -138,21 +169,36 @@ def mad(n_x, yr, min_support, significance_weighting=False, significance_beta=50
     cdef np.ndarray[np.int_t, ndim=2] freq
     # the similarity matrix
     cdef np.ndarray[np.double_t, ndim=2] sim
+    # the variance weighting matrix
+    cdef np.ndarray[np.double_t, ndim=1] var_weights
+    # the sum of variance weights
+    cdef np.ndarray[np.double_t, ndim=1] sum_var_weights
 
     cdef int xi, xj, ri, rj
     cdef int min_sprt = min_support
     cdef double beta = significance_beta
+    cdef double minMax, diff, mad
+
+    if variance_weighting:
+        var_weights, minMax = variance_weights(variance_weighting_nx, variance_weighting_yr)
+
 
     abs_diff = np.zeros((n_x, n_x), np.double)
     freq = np.zeros((n_x, n_x), np.int)
     sim = np.zeros((n_x, n_x), np.double)
+    sum_var_weights = np.zeros((n_x), np.double)
 
     #this might have to be changed when we get to default voting, let's leave it for now
     for y, y_ratings in iteritems(yr):
         for xi, ri in y_ratings:
             for xj, rj in y_ratings:
-                abs_diff[xi, xj] += np.abs(ri - rj)
-                freq[xi, xj] += 1
+                diff = np.abs(ri - rj)
+                if variance_weighting:
+                    abs_diff[xi, xj] += diff * var_weights[y]
+                    sum_var_weights[y] += var_weights[y]
+                else:
+                    abs_diff[xi, xj] += diff
+                 freq[xi, xj] += 1
 
     for xi in range(n_x):
         sim[xi, xi] = 1  # completely arbitrary and useless anyway
@@ -162,13 +208,16 @@ def mad(n_x, yr, min_support, significance_weighting=False, significance_beta=50
             else:
                 # inverse of (mad + 1) (+ 1 to avoid dividing by zero)
                 sim[xi, xj] = 1 / (abs_diff[xi, xj] / freq[xi, xj] + 1)
-                sim[xi, xj] *= (freq[xi, xj] / beta) if significance_weighting else 1
+                if significance_weighting:
+                    sim[xi, xj] *= (freq[xi, xj] / beta)
+                if variance_weighting:
+                    sim[xi, xj] *= 1 / sum_var_weights[xi]
 
             sim[xj, xi] = sim[xi, xj]
 
     return sim
 
-def msd(n_x, yr, min_support, significance_weighting=False, significance_beta=50):
+def msd(n_x, yr, min_support, significance_weighting=False, significance_beta=50, variance_weighting=False):
     """Compute the Mean Squared Difference similarity between all pairs of
     users (or items).
 
@@ -208,20 +257,35 @@ def msd(n_x, yr, min_support, significance_weighting=False, significance_beta=50
     cdef np.ndarray[np.int_t, ndim=2] freq
     # the similarity matrix
     cdef np.ndarray[np.double_t, ndim=2] sim
+    # the variance weighting matrix
+    cdef np.ndarray[np.double_t, ndim=1] var_weights
+    # the sum of variance weights
+    cdef np.ndarray[np.double_t, ndim=1] sum_var_weights
 
     cdef int xi, xj, ri, rj
     cdef int min_sprt = min_support
     cdef double beta = significance_beta
+    cdef double minMax, diff, msd
 
     sq_diff = np.zeros((n_x, n_x), np.double)
     freq = np.zeros((n_x, n_x), np.int)
     sim = np.zeros((n_x, n_x), np.double)
 
+    if variance_weighting:
+        var_weights, minMax = variance_weights(variance_weighting_nx, variance_weighting_yr)
+
+
     for y, y_ratings in iteritems(yr):
         for xi, ri in y_ratings:
             for xj, rj in y_ratings:
-                sq_diff[xi, xj] += (ri - rj)**2
+                diff = (ri - rj) ** 2
+                if variance_weighting:
+                    sq_diff[xi, xj] += diff * var_weights[y]
+                    sum_var_weights[y] += var_weights[y]
+                else:
+                    sq_diff[xi, xj] += diff
                 freq[xi, xj] += 1
+
 
     for xi in range(n_x):
         sim[xi, xi] = 1  # completely arbitrary and useless anyway
@@ -231,7 +295,10 @@ def msd(n_x, yr, min_support, significance_weighting=False, significance_beta=50
             else:
                 # return inverse of (msd + 1) (+ 1 to avoid dividing by zero)
                 sim[xi, xj] = 1 / (sq_diff[xi, xj] / freq[xi, xj] + 1)
-                sim[xi, xj] *= (freq[xi, xj] / beta) if significance_weighting else 1
+                if significance_weighting:
+                    sim[xi, xj] *= (freq[xi, xj] / beta)
+                if variance_weighting:
+                    sim[xi, xj] *= 1 / sum_var_weights[xi]
 
             sim[xj, xi] = sim[xi, xj]
 
@@ -432,15 +499,3 @@ def pearson_baseline(n_x, yr, min_support, global_mean, x_biases, y_biases,
             sim[xj, xi] = sim[xi, xj]
 
     return sim
-
-
-def var_weighting_general(yr):
-    """Calculating variance weighting term of user/item var_i 
-    """
-    return None
-
-def var_weighting():
-    """Calculating variance weighting general terms of user/item 
-    var_max and var_min
-    """
-    return None

@@ -273,6 +273,7 @@ class AlgoBase(object):
         kwargs.update({'min_support': min_support})
         kwargs.update({'significance_weighting': significance_weighting})
         kwargs.update({'significance_beta': beta})
+        kwargs.update({'variance_weighting': variance_weighting})
 
         name = self.sim_options.get('name', 'msd').lower()
         if name == 'pearson_baseline':

@@ -99,15 +99,22 @@ class KNNBasic(SymmetricAlgo):
             similarities for calculating predictions or not. Default is ``False``.
         threshold(float): Value for Threshold - filtering. Default is ``1``. 
             If ``threshold`` is ``not None``, then Threshold - filtering is used.
+        inverse_user_frequency(bool): Whether to use Inverse user frequency
+            for calculating predictions or not. It works only when ``sim_weighting``
+            and ``inverse_user_frequency`` are both ``True``. Depending on the 
+            ``user_based`` field of ``sim_options`` parameter, it is either 
+            Inverse User Frequency (``False``) or Inverse Item Frequency (``True``). 
+            Default is ``False``.
     """
 
-    def __init__(self, k=40, min_k=1, sim_weighting=False, threshold=1, sim_options={}, **kwargs):
+    def __init__(self, k=40, min_k=1, sim_weighting=False, threshold=1, inverse_user_frequency=False, sim_options={}, **kwargs):
 
         SymmetricAlgo.__init__(self, sim_options=sim_options, **kwargs)
         self.k = k
         self.min_k = min_k
         self.sim_weighting = sim_weighting
         self.threshold = threshold
+        self.inverse_user_frequency = inverse_user_frequency
 
     def fit(self, trainset):
 
