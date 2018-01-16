@@ -201,7 +201,7 @@ def mad(n_x, yr, n_y, min_support, significance_weighting=False, significance_be
                     sum_var_weights[y] += var_weights[y]
                 else:
                     abs_diff[xi, xj] += diff
-                 freq[xi, xj] += 1
+                freq[xi, xj] += 1
 
     for xi in range(n_x):
         sim[xi, xi] = 1  # completely arbitrary and useless anyway
@@ -274,6 +274,7 @@ def msd(n_x, yr, n_y, min_support, significance_weighting=False, significance_be
     sq_diff = np.zeros((n_x, n_x), np.double)
     freq = np.zeros((n_x, n_x), np.int)
     sim = np.zeros((n_x, n_x), np.double)
+    sum_var_weights = np.zeros((ny), np.double)
 
     if variance_weighting:
         var_weights, minMax = variance_weights(n_y, var_weight_yr)

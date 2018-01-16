@@ -128,7 +128,7 @@ class KNNBasic(SymmetricAlgo):
             neighbors = [(self.sim[x, x2], r) for (x2, r) in self.yr[y]]
             nearest_neighbors = heapq.nlargest(self.k, neighbors, key=lambda t: t[0])
         else:
-            nearest_neighbors = [self.sim[x, x2], r] for (x2, r) in self.yr[y] if self.sim[x, x2] > threshold]
+            nearest_neighbors = [(self.sim[x, x2], r) for (x2, r) in self.yr[y] if self.sim[x, x2] > threshold]
             
             
 
