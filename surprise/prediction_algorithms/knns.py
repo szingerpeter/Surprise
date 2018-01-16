@@ -101,14 +101,13 @@ class KNNBasic(SymmetricAlgo):
             If ``threshold`` is ``not None``, then Threshold - filtering is used.
     """
 
-    def __init__(self, k=40, min_k=1, sim_weighting=False, threshold=1, sim_options={}, **kwargs):
+    def __init__(self, k=40, min_k=1, sim_weighting=False, threshold=None, sim_options={}, **kwargs):
 
         SymmetricAlgo.__init__(self, sim_options=sim_options, **kwargs)
         self.k = k
         self.min_k = min_k
         self.sim_weighting = sim_weighting
         self.threshold = threshold
-        self.inverse_user_frequency = inverse_user_frequency
 
     def fit(self, trainset):
 
@@ -124,11 +123,11 @@ class KNNBasic(SymmetricAlgo):
 
         x, y = self.switch(u, i)
 
-        if threshold is None:
+        if self.threshold is None:
             neighbors = [(self.sim[x, x2], r) for (x2, r) in self.yr[y]]
             nearest_neighbors = heapq.nlargest(self.k, neighbors, key=lambda t: t[0])
         else:
-            nearest_neighbors = [(self.sim[x, x2], r) for (x2, r) in self.yr[y] if self.sim[x, x2] > threshold]
+            nearest_neighbors = [(self.sim[x, x2], r) for (x2, r) in self.yr[y] if self.sim[x, x2] > self.threshold]
             
             
 
@@ -206,7 +205,7 @@ class KNNWithMeans(SymmetricAlgo):
             If ``threshold`` is ``not None``, then Threshold - filtering is used.
     """
 
-    def __init__(self, k=40, min_k=1, sim_weighting=False, threshold=1, sim_options={}, **kwargs):
+    def __init__(self, k=40, min_k=1, sim_weighting=False, threshold=None, sim_options={}, **kwargs):
 
         SymmetricAlgo.__init__(self, sim_options=sim_options, **kwargs)
 
@@ -233,11 +232,11 @@ class KNNWithMeans(SymmetricAlgo):
 
         x, y = self.switch(u, i)
 
-        if threshold is None:
+        if self.threshold is None:
             neighbors = [(self.sim[x, x2], r) for (x2, r) in self.yr[y]]
             nearest_neighbors = heapq.nlargest(self.k, neighbors, key=lambda t: t[0])
         else:
-            nearest_neighbors = [self.sim[x, x2], r] for (x2, r) in self.yr[y] if self.sim[x, x2] > threshold]
+            nearest_neighbors = [(self.sim[x, x2], r) for (x2, r) in self.yr[y] if self.sim[x, x2] > self.threshold]
 
         est = self.means[x]
 
@@ -331,7 +330,7 @@ class KNNBaseline(SymmetricAlgo):
 
     """
 
-    def __init__(self, k=40, min_k=1, sim_weighting=False, threshold=1, sim_options={}, bsl_options={}):
+    def __init__(self, k=40, min_k=1, sim_weighting=False, threshold=None, sim_options={}, bsl_options={}):
 
         SymmetricAlgo.__init__(self, sim_options=sim_options,
                                bsl_options=bsl_options)
@@ -363,11 +362,11 @@ class KNNBaseline(SymmetricAlgo):
         if not (self.trainset.knows_user(u) and self.trainset.knows_item(i)):
             return est
 
-        if threshold is None:
+        if self.threshold is None:
             neighbors = [(self.sim[x, x2], r) for (x2, r) in self.yr[y]]
             nearest_neighbors = heapq.nlargest(self.k, neighbors, key=lambda t: t[0])
         else:
-            nearest_neighbors = [self.sim[x, x2], r] for (x2, r) in self.yr[y] if self.sim[x, x2] > threshold]
+            nearest_neighbors = [(self.sim[x, x2], r) for (x2, r) in self.yr[y] if self.sim[x, x2] > self.threshold]
 
         # compute average
         sum_sim = sum_ratings = actual_k = 0
@@ -448,7 +447,7 @@ class KNNWithZScore(SymmetricAlgo):
             If ``threshold`` is ``not None``, then Threshold - filtering is used.
     """
 
-    def __init__(self, k=40, min_k=1, sim_weighting=False, threshold=1, sim_options={}, **kwargs):
+    def __init__(self, k=40, min_k=1, sim_weighting=False, threshold=None, sim_options={}, **kwargs):
 
         SymmetricAlgo.__init__(self, sim_options=sim_options, **kwargs)
 
@@ -483,11 +482,11 @@ class KNNWithZScore(SymmetricAlgo):
 
         x, y = self.switch(u, i)
 
-        if threshold is None:
+        if self.threshold is None:
             neighbors = [(self.sim[x, x2], r) for (x2, r) in self.yr[y]]
             nearest_neighbors = heapq.nlargest(self.k, neighbors, key=lambda t: t[0])
         else:
-            nearest_neighbors = [self.sim[x, x2], r] for (x2, r) in self.yr[y] if self.sim[x, x2] > threshold]
+            nearest_neighbors = [(self.sim[x, x2], r) for (x2, r) in self.yr[y] if self.sim[x, x2] > self.threshold]
 
         est = self.means[x]
 

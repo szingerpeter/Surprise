@@ -43,7 +43,8 @@ def variance_weights(n_x, yr):
     The variance-weight is defined as:
 
     .. math::
-        \\text{var\\texsubscript{i}} = \\text{var\\textsubscript{i}} - frac{\\text{var\\textsubscript{min}}}{\\text{var\\textsubscript{max}}}
+        \\text{var\\texsubscript{i}} = \\text{var\\textsubscript{i}} - 
+        frac{\\text{var\\textsubscript{min}}}{\\text{var\\textsubscript{max}}}
     """
     cdef np.ndarray[np.double_t, ndim=1] var_weights
     var_weights = np.zeros((n_x), np.double)
@@ -57,7 +58,8 @@ def variance_weights(n_x, yr):
 
 
 
-def cosine(n_x, yr, n_y, min_support, significance_weighting=False, significance_beta=50):
+def cosine(n_x, yr, n_y, min_support, significance_weighting=False, significance_beta=50,
+           variance_weighting=False, inverse_user_frequency=False):
     """Compute the cosine similarity between all pairs of users (or items).
 
     Only **common** users (or items) are taken into account. The cosine
@@ -129,7 +131,8 @@ def cosine(n_x, yr, n_y, min_support, significance_weighting=False, significance
 
     return sim
 
-def mad(n_x, yr, n_y, min_support, significance_weighting=False, significance_beta=50, variance_weighting=False, var_weight_yr=None, inverse_user_frequency=False):
+def mad(n_x, yr, n_y, min_support, significance_weighting=False, significance_beta=50,
+        variance_weighting=False, var_weight_yr=None, inverse_user_frequency=False):
     """Compute the Mean Absolute Difference similarity between all pairs of 
     users (or items).
 
@@ -220,7 +223,8 @@ def mad(n_x, yr, n_y, min_support, significance_weighting=False, significance_be
 
     return sim
 
-def msd(n_x, yr, n_y, min_support, significance_weighting=False, significance_beta=50, variance_weighting=False, var_weight_yr=None, inverse_user_frequency=False):
+def msd(n_x, yr, n_y, min_support, significance_weighting=False, significance_beta=50,
+        variance_weighting=False, var_weight_yr=None, inverse_user_frequency=False):
     """Compute the Mean Squared Difference similarity between all pairs of
     users (or items).
 
@@ -312,7 +316,8 @@ def msd(n_x, yr, n_y, min_support, significance_weighting=False, significance_be
     return sim
 
 
-def pearson(n_x, yr, n_y, min_support, significance_weighting=False, significance_beta=50):
+def pearson(n_x, yr, n_y, min_support, significance_weighting=False, significance_beta=50,
+            variance_weighting=False, inverse_user_frequency=False):
     """Compute the Pearson correlation coefficient between all pairs of users
     (or items).
 
@@ -406,7 +411,7 @@ def pearson(n_x, yr, n_y, min_support, significance_weighting=False, significanc
 
 
 def pearson_baseline(n_x, yr, n_y, min_support, global_mean, x_biases, y_biases,
-                     shrinkage=100):
+                     shrinkage=100, variance_weighting=False, inverse_user_frequency=False):
     """Compute the (shrunk) Pearson correlation coefficient between all pairs
     of users (or items) using baselines for centering instead of means.
 
