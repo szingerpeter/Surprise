@@ -102,33 +102,93 @@ def cosine(n_x, yr, n_y, min_support, significance_weighting=False, significance
     cdef int xi, xj, ri, rj
     cdef int min_sprt = min_support
     cdef double beta = significance_beta
+    cdef int ny = n_y
 
-    prods = np.zeros((n_x, n_x), np.int)
-    freq = np.zeros((n_x, n_x), np.int)
-    sqi = np.zeros((n_x, n_x), np.int)
-    sqj = np.zeros((n_x, n_x), np.int)
-    sim = np.zeros((n_x, n_x), np.double)
+    #inverse user frequency    
+    cdef double f, nom
+    cdef np.ndarray[np.int_t, ndim=2] sum_fxai
+    cdef np.ndarray[np.int_t, ndim=2] sum_fxa
+    cdef np.ndarray[np.int_t, ndim=2] sum_fxi
+    cdef np.ndarray[np.int_t, ndim=2] sum_fxa_squared
+    cdef np.ndarray[np.int_t, ndim=2] sum_fxi_squared
+    cdef np.ndarray[np.int_t, ndim=2] sum_sum_fxai
+    cdef np.ndarray[np.int_t, ndim=2] u
+    cdef np.ndarray[np.int_t, ndim=2] v
 
-    for y, y_ratings in iteritems(yr):
-        for xi, ri in y_ratings:
-            for xj, rj in y_ratings:
-                freq[xi, xj] += 1
-                prods[xi, xj] += ri * rj
-                sqi[xi, xj] += ri**2
-                sqj[xi, xj] += rj**2
 
-    for xi in range(n_x):
-        sim[xi, xi] = 1
-        for xj in range(xi + 1, n_x):
-            if freq[xi, xj] < min_sprt:
-                sim[xi, xj] = 0
-            else:
-                denum = np.sqrt(sqi[xi, xj] * sqj[xi, xj])
-                sim[xi, xj] = prods[xi, xj] / denum
-                sim[xi, xj] *= (freq[xi, xj] / beta) if significance_weighting else 1
+    if not inverse_user_frequency:
+        prods = np.zeros((n_x, n_x), np.int)
+        freq = np.zeros((n_x, n_x), np.int)
+        sqi = np.zeros((n_x, n_x), np.int)
+        sqj = np.zeros((n_x, n_x), np.int)
+        sim = np.zeros((n_x, n_x), np.double)
 
-            sim[xj, xi] = sim[xi, xj]
+        for y, y_ratings in iteritems(yr):
+            for xi, ri in y_ratings:
+                for xj, rj in y_ratings:
+                    freq[xi, xj] += 1
+                    prods[xi, xj] += ri * rj
+                    sqi[xi, xj] += ri**2
+                    sqj[xi, xj] += rj**2
+               
 
+        for xi in range(n_x):
+            sim[xi, xi] = 1
+            for xj in range(xi + 1, n_x):
+                if freq[xi, xj] < min_sprt:
+                    sim[xi, xj] = 0
+                else:
+                    denum = np.sqrt(sqi[xi, xj] * sqj[xi, xj])
+                    sim[xi, xj] = prods[xi, xj] / denum
+                    if significance_weighting:
+                        sim[xi, xj] *= (freq[xi, xj] / beta)
+        
+                sim[xj, xi] = sim[xi, xj]
+
+    else:
+        sum_fxai = np.zeros((n_x, n_x), np.double)
+        sum_fxa = np.zeros((n_x, n_x), np.double)
+        sum_fxi = np.zeros((n_x, n_x), np.double)
+        sum_fxa_squared = np.zeros((n_x, n_x), np.double)
+        sum_fxi_squared = np.zeros((n_x, n_x), np.double)
+        for y, y_ratings in iteritems(yr):
+            for xa, ra in y_ratings:
+                for xi, ri, in y_ratings:
+                    freq[xi, xj] += 1
+                    f = np.log(ny / len(y_ratings))
+                    sum_fxai[xa, xi] += f * ra * ri
+                    sum_fxa[xa, xi] += f * ra
+                    sum_fxi[xa, xi] += f * ri
+                    sum_fxa_squared[xa, xi] += f * ra ** 2
+                    sum_fxi_squared[xa, xi] += f * ri ** 2
+    
+        sum_sum_fxai = np.zeros((n_x, n_x), np.double)
+        u = np.zeros((n_x, n_x), np.double)
+        v = np.zeros((n_x, n_x), np.double)
+        for y, y_ratings in iteritems(yr):
+            for xa in range(n_x):
+                for xi in range(xa + 1, n_x):
+                    f = np.log(ny / len(y_ratings))
+                    sum_sum_fxij[xa, xi] += f * sum_fxai[xa, xi]
+                    u[xa, xi] += f * (sum_fxa_squared[xa, xi] - sum_fxa[xa, xi] ** 2)
+                    v[xa, xi] += f * (sum_fxi_squared[xa, xi] - sum_fxi[xa, xi] ** 2)
+
+            sum_sum_fxij[xi, xa] = sum_sum_fxij[xa, xi]
+            u[xi, xa] = v[xa, xi]
+            v[xi, xa] = u[xa, xi]
+                
+            
+        for xa in range(n_x):
+            sim[xa, xa] = 1
+            for xi in range(xa + 1, n_x):
+                if freq[xa, xi] < min_sprt:
+                    sim[xa, xi] = 0
+                else:
+                    nom = sum_sum_fxai[xa, xi] - (sum_fxa[xa, xi] * sum_fxi[xa, xi])
+                    sim[xa, xi] = nom / np.sqrt(u[xa, xi] * v[xa, xi])
+    
+            sim[xi, xa] = sim[xa, xi]
+    
     return sim
 
 def mad(n_x, yr, n_y, min_support, significance_weighting=False, significance_beta=50,
@@ -403,7 +463,8 @@ def pearson(n_x, yr, n_y, min_support, significance_weighting=False, significanc
                     sim[xi, xj] = 0
                 else:
                     sim[xi, xj] = num / denum
-                    sim[xi, xj] *= (freq[xi, xj] / beta) if significance_weighting else 1
+                    if significance_weighting:
+                        sim[xi, xj] *= (freq[xi, xj] / beta)
 
             sim[xj, xi] = sim[xi, xj]
 
@@ -411,7 +472,8 @@ def pearson(n_x, yr, n_y, min_support, significance_weighting=False, significanc
 
 
 def pearson_baseline(n_x, yr, n_y, min_support, global_mean, x_biases, y_biases,
-                     shrinkage=100, variance_weighting=False, inverse_user_frequency=False):
+                     shrinkage=100, significance_weighting=False, variance_weighting=False,
+                     inverse_user_frequency=False):
     """Compute the (shrunk) Pearson correlation coefficient between all pairs
     of users (or items) using baselines for centering instead of means.
 
