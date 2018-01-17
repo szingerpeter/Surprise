@@ -302,9 +302,9 @@ class AlgoBase(object):
             kwargs.update({'shrinkage': shrinkage})
 
         try:
-            print('Computing the {0} similarity matrix...'.format(name))
+            #print('Computing the {0} similarity matrix...'.format(name))
             sim = construction_func[name](**kwargs)
-            print('Done computing similarity matrix.')
+            #print('Done computing similarity matrix.')
             return sim
         except KeyError:
             raise NameError('Wrong sim name ' + name + '. Allowed values ' +

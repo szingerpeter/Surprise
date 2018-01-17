@@ -106,23 +106,25 @@ def cosine(n_x, yr, n_y, min_support, significance_weighting=False, significance
     cdef int ny = n_y
 
     #inverse user frequency    
+    cdef int xa
     cdef double f, nom
-    cdef np.ndarray[np.int_t, ndim=2] sum_fxai
-    cdef np.ndarray[np.int_t, ndim=2] sum_fxa
-    cdef np.ndarray[np.int_t, ndim=2] sum_fxi
-    cdef np.ndarray[np.int_t, ndim=2] sum_fxa_squared
-    cdef np.ndarray[np.int_t, ndim=2] sum_fxi_squared
-    cdef np.ndarray[np.int_t, ndim=2] sum_sum_fxai
-    cdef np.ndarray[np.int_t, ndim=2] u
-    cdef np.ndarray[np.int_t, ndim=2] v
+    cdef np.ndarray[np.double_t, ndim=2] sum_fxai
+    cdef np.ndarray[np.double_t, ndim=2] sum_fxa
+    cdef np.ndarray[np.double_t, ndim=2] sum_fxi
+    cdef np.ndarray[np.double_t, ndim=2] sum_fxa_squared
+    cdef np.ndarray[np.double_t, ndim=2] sum_fxi_squared
+    cdef np.ndarray[np.double_t, ndim=2] sum_sum_fxai
+    cdef np.ndarray[np.double_t, ndim=2] u
+    cdef np.ndarray[np.double_t, ndim=2] v
 
+
+    freq = np.zeros((n_x, n_x), np.int)
+    sim = np.zeros((n_x, n_x), np.double)
 
     if not inverse_user_frequency:
         prods = np.zeros((n_x, n_x), np.int)
-        freq = np.zeros((n_x, n_x), np.int)
         sqi = np.zeros((n_x, n_x), np.int)
         sqj = np.zeros((n_x, n_x), np.int)
-        sim = np.zeros((n_x, n_x), np.double)
 
         for y, y_ratings in iteritems(yr):
             for xi, ri in y_ratings:
@@ -170,11 +172,11 @@ def cosine(n_x, yr, n_y, min_support, significance_weighting=False, significance
             for xa in range(n_x):
                 for xi in range(xa + 1, n_x):
                     f = np.log(ny / len(y_ratings))
-                    sum_sum_fxij[xa, xi] += f * sum_fxai[xa, xi]
+                    sum_sum_fxai[xa, xi] += f * sum_fxai[xa, xi]
                     u[xa, xi] += f * (sum_fxa_squared[xa, xi] - sum_fxa[xa, xi] ** 2)
                     v[xa, xi] += f * (sum_fxi_squared[xa, xi] - sum_fxi[xa, xi] ** 2)
 
-            sum_sum_fxij[xi, xa] = sum_sum_fxij[xa, xi]
+            sum_sum_fxai[xi, xa] = sum_sum_fxai[xa, xi]
             u[xi, xa] = v[xa, xi]
             v[xi, xa] = u[xa, xi]
                 
@@ -283,7 +285,7 @@ def mad(n_x, yr, n_y, min_support, significance_weighting=False, significance_be
                 if variance_weighting:
                     sim[xi, xj] *= 1 / sum_var_weights[xi]
                 if case_amplification:
-                    sim[xa, xi] *= sim[xa, xi] ** p
+                    sim[xi, xj] *= sim[xi, xj] ** p
             sim[xj, xi] = sim[xi, xj]
 
     return sim
@@ -377,7 +379,7 @@ def msd(n_x, yr, n_y, min_support, significance_weighting=False, significance_be
                 if variance_weighting:
                     sim[xi, xj] *= 1 / sum_var_weights[xi]
                 if case_amplification:
-                    sim[xa, xi] *= sim[xa, xi] ** p
+                    sim[xi, xj] *= sim[xi, xj] ** p
             sim[xj, xi] = sim[xi, xj]
 
     return sim
@@ -474,7 +476,7 @@ def pearson(n_x, yr, n_y, min_support, significance_weighting=False, significanc
                     if significance_weighting:
                         sim[xi, xj] *= (freq[xi, xj] / beta)
                     if case_amplification:
-                        sim[xa, xi] *= sim[xa, xi] ** p
+                        sim[xi, xj] *= sim[xi, xj] ** p
             sim[xj, xi] = sim[xi, xj]
 
     return sim
@@ -579,7 +581,7 @@ def pearson_baseline(n_x, yr, n_y, min_support, global_mean, x_biases, y_biases,
                 sim[xi, xj] *= (freq[xi, xj] - 1) / (freq[xi, xj] - 1 +
                                                      shrinkage)
                 if case_amplification:
-                    sim[xa, xi] *= sim[xa, xi] ** p
+                    sim[xi, xj] *= sim[xi, xj] ** p
             sim[xj, xi] = sim[xi, xj]
 
     return sim
