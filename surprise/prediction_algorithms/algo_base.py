@@ -258,6 +258,8 @@ class AlgoBase(object):
         beta = self.sim_options.get('significance_beta', 50)
         variance_weighting = self.sim_options.get('variance_weighting', False)
         inverse_user_frequency = self.sim_options.get('inverse_user_frequency', False)
+        case_amplification = self.sim_options.get('case_amplification', False)
+        p = self.sim_options.get('p', 0)
 
         var_weight_yr = None
 
@@ -279,6 +281,8 @@ class AlgoBase(object):
         kwargs.update({'significance_beta': beta})
         kwargs.update({'variance_weighting': variance_weighting})
         kwargs.update({'inverse_user_frequency': inverse_user_frequency})
+        kwargs.update({'case_amplification': case_amplification})
+        kwargs.update({'p': p})
 
         if variance_weighting:
             kwargs.update({'var_weight_yr': var_weight_yr})

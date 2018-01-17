@@ -59,7 +59,8 @@ def variance_weights(n_x, yr):
 
 
 def cosine(n_x, yr, n_y, min_support, significance_weighting=False, significance_beta=50,
-           variance_weighting=False, inverse_user_frequency=False):
+           variance_weighting=False, inverse_user_frequency=False, case_amplification=False,
+           p=1):
     """Compute the cosine similarity between all pairs of users (or items).
 
     Only **common** users (or items) are taken into account. The cosine
@@ -186,13 +187,16 @@ def cosine(n_x, yr, n_y, min_support, significance_weighting=False, significance
                 else:
                     nom = sum_sum_fxai[xa, xi] - (sum_fxa[xa, xi] * sum_fxi[xa, xi])
                     sim[xa, xi] = nom / np.sqrt(u[xa, xi] * v[xa, xi])
+                    if case_amplification:
+                        sim[xa, xi] *= sim[xa, xi] ** p
     
             sim[xi, xa] = sim[xa, xi]
     
     return sim
 
 def mad(n_x, yr, n_y, min_support, significance_weighting=False, significance_beta=50,
-        variance_weighting=False, var_weight_yr=None, inverse_user_frequency=False):
+        variance_weighting=False, var_weight_yr=None, inverse_user_frequency=False,
+        case_amplification=False, p=1):
     """Compute the Mean Absolute Difference similarity between all pairs of 
     users (or items).
 
@@ -278,13 +282,15 @@ def mad(n_x, yr, n_y, min_support, significance_weighting=False, significance_be
                     sim[xi, xj] *= (freq[xi, xj] / beta)
                 if variance_weighting:
                     sim[xi, xj] *= 1 / sum_var_weights[xi]
-
+                if case_amplification:
+                    sim[xa, xi] *= sim[xa, xi] ** p
             sim[xj, xi] = sim[xi, xj]
 
     return sim
 
 def msd(n_x, yr, n_y, min_support, significance_weighting=False, significance_beta=50,
-        variance_weighting=False, var_weight_yr=None, inverse_user_frequency=False):
+        variance_weighting=False, var_weight_yr=None, inverse_user_frequency=False,
+        case_amplification=False, p=1):
     """Compute the Mean Squared Difference similarity between all pairs of
     users (or items).
 
@@ -370,14 +376,16 @@ def msd(n_x, yr, n_y, min_support, significance_weighting=False, significance_be
                     sim[xi, xj] *= (freq[xi, xj] / beta)
                 if variance_weighting:
                     sim[xi, xj] *= 1 / sum_var_weights[xi]
-
+                if case_amplification:
+                    sim[xa, xi] *= sim[xa, xi] ** p
             sim[xj, xi] = sim[xi, xj]
 
     return sim
 
 
 def pearson(n_x, yr, n_y, min_support, significance_weighting=False, significance_beta=50,
-            variance_weighting=False, inverse_user_frequency=False):
+            variance_weighting=False, inverse_user_frequency=False, case_amplification=False,
+            p=1):
     """Compute the Pearson correlation coefficient between all pairs of users
     (or items).
 
@@ -465,7 +473,8 @@ def pearson(n_x, yr, n_y, min_support, significance_weighting=False, significanc
                     sim[xi, xj] = num / denum
                     if significance_weighting:
                         sim[xi, xj] *= (freq[xi, xj] / beta)
-
+                    if case_amplification:
+                        sim[xa, xi] *= sim[xa, xi] ** p
             sim[xj, xi] = sim[xi, xj]
 
     return sim
@@ -473,7 +482,7 @@ def pearson(n_x, yr, n_y, min_support, significance_weighting=False, significanc
 
 def pearson_baseline(n_x, yr, n_y, min_support, global_mean, x_biases, y_biases,
                      shrinkage=100, significance_weighting=False, variance_weighting=False,
-                     inverse_user_frequency=False):
+                     inverse_user_frequency=False, case_amplification=False, p=1):
     """Compute the (shrunk) Pearson correlation coefficient between all pairs
     of users (or items) using baselines for centering instead of means.
 
@@ -569,7 +578,8 @@ def pearson_baseline(n_x, yr, n_y, min_support, global_mean, x_biases, y_biases,
                 # the shrinkage part
                 sim[xi, xj] *= (freq[xi, xj] - 1) / (freq[xi, xj] - 1 +
                                                      shrinkage)
-
+                if case_amplification:
+                    sim[xa, xi] *= sim[xa, xi] ** p
             sim[xj, xi] = sim[xi, xj]
 
     return sim
