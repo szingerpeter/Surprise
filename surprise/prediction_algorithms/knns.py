@@ -233,10 +233,10 @@ class KNNWithMeans(SymmetricAlgo):
         x, y = self.switch(u, i)
 
         if self.threshold is None:
-            neighbors = [(self.sim[x, x2], r) for (x2, r) in self.yr[y]]
+            neighbors = [(x2, self.sim[x, x2], r) for (x2, r) in self.yr[y]]
             nearest_neighbors = heapq.nlargest(self.k, neighbors, key=lambda t: t[0])
         else:
-            nearest_neighbors = [(self.sim[x, x2], r) for (x2, r) in self.yr[y] if self.sim[x, x2] > self.threshold]
+            nearest_neighbors = [(x2, self.sim[x, x2], r) for (x2, r) in self.yr[y] if self.sim[x, x2] > self.threshold]
 
         est = self.means[x]
 
@@ -363,10 +363,10 @@ class KNNBaseline(SymmetricAlgo):
             return est
 
         if self.threshold is None:
-            neighbors = [(self.sim[x, x2], r) for (x2, r) in self.yr[y]]
+            neighbors = [(x2, self.sim[x, x2], r) for (x2, r) in self.yr[y]]
             nearest_neighbors = heapq.nlargest(self.k, neighbors, key=lambda t: t[0])
         else:
-            nearest_neighbors = [(self.sim[x, x2], r) for (x2, r) in self.yr[y] if self.sim[x, x2] > self.threshold]
+            nearest_neighbors = [(x2, self.sim[x, x2], r) for (x2, r) in self.yr[y] if self.sim[x, x2] > self.threshold]
 
         # compute average
         sum_sim = sum_ratings = actual_k = 0
@@ -483,10 +483,10 @@ class KNNWithZScore(SymmetricAlgo):
         x, y = self.switch(u, i)
 
         if self.threshold is None:
-            neighbors = [(self.sim[x, x2], r) for (x2, r) in self.yr[y]]
+            neighbors = [(x2, self.sim[x, x2], r) for (x2, r) in self.yr[y]]
             nearest_neighbors = heapq.nlargest(self.k, neighbors, key=lambda t: t[0])
         else:
-            nearest_neighbors = [(self.sim[x, x2], r) for (x2, r) in self.yr[y] if self.sim[x, x2] > self.threshold]
+            nearest_neighbors = [(x2, self.sim[x, x2], r) for (x2, r) in self.yr[y] if self.sim[x, x2] > self.threshold]
 
         est = self.means[x]
 
