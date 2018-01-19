@@ -226,7 +226,7 @@ class AlgoBase(object):
         method_name = self.bsl_options.get('method', 'als')
 
         try:
-            print('Estimating biases using', method_name + '...')
+            #print('Estimating biases using', method_name + '...')
             self.bu, self.bi = method[method_name](self)
             return self.bu, self.bi
         except KeyError:
@@ -259,7 +259,7 @@ class AlgoBase(object):
         variance_weighting = self.sim_options.get('variance_weighting', False)
         inverse_user_frequency = self.sim_options.get('inverse_user_frequency', False)
         case_amplification = self.sim_options.get('case_amplification', False)
-        p = self.sim_options.get('p', 0)
+        p = self.sim_options.get('p', 1)
 
         var_weight_yr = None
 

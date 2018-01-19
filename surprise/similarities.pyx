@@ -50,7 +50,7 @@ def variance_weights(n_x, yr):
     var_weights = np.zeros((n_x), np.double)
 
     for y, y_ratings in iteritems(yr):
-        var_weights[y] = np.var(list(y_ratings.values()))
+        var_weights[y] = np.var([rating for (iid, rating) in y_ratings])
 
     minMax = np.min(var_weights) / np.max(var_weights)
 
