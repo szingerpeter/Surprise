@@ -377,7 +377,8 @@ def msd(n_x, yr, n_y, min_support, significance_weighting=False, significance_be
                 if significance_weighting:
                     sim[xi, xj] *= (freq[xi, xj] / beta)
                 if variance_weighting:
-                    sim[xi, xj] *= 1 / sum_var_weights[xi]
+                    # +1 to avoid dividing by zero
+                    sim[xi, xj] *= 1 / (sum_var_weights[xi] + 1)
                 if case_amplification:
                     sim[xi, xj] *= sim[xi, xj] ** p
             sim[xj, xi] = sim[xi, xj]
