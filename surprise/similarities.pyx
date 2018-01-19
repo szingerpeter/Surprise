@@ -157,7 +157,7 @@ def cosine(n_x, yr, n_y, min_support, significance_weighting=False, significance
         for y, y_ratings in iteritems(yr):
             for xa, ra in y_ratings:
                 for xi, ri, in y_ratings:
-                    freq[xi, xj] += 1
+                    freq[xa, xi] += 1
                     f = np.log(ny / len(y_ratings))
                     sum_fxai[xa, xi] += f * ra * ri
                     sum_fxa[xa, xi] += f * ra
