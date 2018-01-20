@@ -241,7 +241,7 @@ def mad(n_x, yr, n_y, min_support, significance_weighting=False, significance_be
     # the variance weighting matrix
     cdef np.ndarray[np.double_t, ndim=1] var_weights
     # the sum of variance weights
-    cdef np.ndarray[np.double_t, ndim=1] sum_var_weights
+    cdef np.ndarray[np.double_t, ndim=2] sum_var_weights
 
     cdef int xi, xj, ri, rj
     cdef int min_sprt = min_support
@@ -250,13 +250,13 @@ def mad(n_x, yr, n_y, min_support, significance_weighting=False, significance_be
     cdef int ny = n_y
 
     if variance_weighting:
-        var_weights, minMax = variance_weights(n_y, var_weight_yr)
+        var_weights, minMax = variance_weights(n_y, yr)
 
 
     abs_diff = np.zeros((n_x, n_x), np.double)
     freq = np.zeros((n_x, n_x), np.int)
     sim = np.zeros((n_x, n_x), np.double)
-    sum_var_weights = np.zeros((n_x), np.double)
+    sum_var_weights = np.zeros((n_x, n_x), np.double)
 
     #this might have to be changed when we get to default voting, let's leave it for now
     for y, y_ratings in iteritems(yr):
@@ -267,7 +267,7 @@ def mad(n_x, yr, n_y, min_support, significance_weighting=False, significance_be
                     diff *= np.log(ny / len(y_ratings))
                 if variance_weighting:
                     abs_diff[xi, xj] += diff * var_weights[y]
-                    sum_var_weights[y] += var_weights[y]
+                    sum_var_weights[xi, xj] += var_weights[y]
                 else:
                     abs_diff[xi, xj] += diff
                 freq[xi, xj] += 1
@@ -283,7 +283,8 @@ def mad(n_x, yr, n_y, min_support, significance_weighting=False, significance_be
                 if significance_weighting:
                     sim[xi, xj] *= (freq[xi, xj] / beta)
                 if variance_weighting:
-                    sim[xi, xj] *= 1 / sum_var_weights[xi]
+                    # +1 to avoid dividing by zero
+                    sim[xi, xj] *= 1 / (sum_var_weights[xi, xj] + 1)
                 if case_amplification:
                     sim[xi, xj] *= sim[xi, xj] ** p
             sim[xj, xi] = sim[xi, xj]
@@ -335,7 +336,7 @@ def msd(n_x, yr, n_y, min_support, significance_weighting=False, significance_be
     # the variance weighting matrix
     cdef np.ndarray[np.double_t, ndim=1] var_weights
     # the sum of variance weights
-    cdef np.ndarray[np.double_t, ndim=1] sum_var_weights
+    cdef np.ndarray[np.double_t, ndim=2] sum_var_weights
 
     cdef int xi, xj, ri, rj
     cdef int min_sprt = min_support
@@ -346,10 +347,10 @@ def msd(n_x, yr, n_y, min_support, significance_weighting=False, significance_be
     sq_diff = np.zeros((n_x, n_x), np.double)
     freq = np.zeros((n_x, n_x), np.int)
     sim = np.zeros((n_x, n_x), np.double)
-    sum_var_weights = np.zeros((ny), np.double)
+    sum_var_weights = np.zeros((n_x, n_x), np.double)
 
     if variance_weighting:
-        var_weights, minMax = variance_weights(n_y, var_weight_yr)
+        var_weights, minMax = variance_weights(n_y, yr)
 
 
     for y, y_ratings in iteritems(yr):
@@ -360,7 +361,7 @@ def msd(n_x, yr, n_y, min_support, significance_weighting=False, significance_be
                     diff *= np.log(ny / len(y_ratings))
                 if variance_weighting:
                     sq_diff[xi, xj] += diff * var_weights[y]
-                    sum_var_weights[y] += var_weights[y]
+                    sum_var_weights[xi, xj] += var_weights[y]
                 else:
                     sq_diff[xi, xj] += diff
                 freq[xi, xj] += 1
@@ -378,7 +379,7 @@ def msd(n_x, yr, n_y, min_support, significance_weighting=False, significance_be
                     sim[xi, xj] *= (freq[xi, xj] / beta)
                 if variance_weighting:
                     # +1 to avoid dividing by zero
-                    sim[xi, xj] *= 1 / (sum_var_weights[xi] + 1)
+                    sim[xi, xj] *= 1 / (sum_var_weights[xi, xj] + 1)
                 if case_amplification:
                     sim[xi, xj] *= sim[xi, xj] ** p
             sim[xj, xi] = sim[xi, xj]
