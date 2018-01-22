@@ -485,8 +485,9 @@ def pearson(n_x, yr, n_y, min_support, significance_weighting=False, significanc
 
 
 def pearson_baseline(n_x, yr, n_y, min_support, global_mean, x_biases, y_biases,
-                     shrinkage=100, significance_weighting=False, variance_weighting=False,
-                     inverse_user_frequency=False, case_amplification=False, p=1):
+                     shrinkage=100, significance_weighting=False, significance_beta=50,
+                     variance_weighting=False, inverse_user_frequency=False, case_amplification=False,
+                     p=1):
     """Compute the (shrunk) Pearson correlation coefficient between all pairs
     of users (or items) using baselines for centering instead of means.
 
